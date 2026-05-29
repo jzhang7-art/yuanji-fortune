@@ -4,7 +4,12 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// GitHub Pages 项目站部署在 https://<user>.github.io/<repo>/，需要 base 前缀；
+// 本地 dev 和未来切自定义域名时改回 '/'。
+const BASE = process.env.VITE_BASE ?? '/yuanji-fortune/'
+
 export default defineConfig({
+  base: BASE,
   plugins: [
     react(),
     tailwindcss(),
@@ -15,7 +20,7 @@ export default defineConfig({
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${BASE}index.html`,
         navigateFallbackDenylist: [/^\/api\//],
       },
       devOptions: { enabled: false },
