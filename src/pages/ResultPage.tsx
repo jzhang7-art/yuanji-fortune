@@ -10,7 +10,8 @@ import { ShareCardModal } from '@/components/ShareCardModal'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { Reveal } from '@/motion/Reveal'
 import { ResultHero } from '@/components/result/ResultHero'
-import { ResultPanels } from '@/components/result/ResultPanels'
+import { ResultPanelBestHour, ResultPanelsLocked } from '@/components/result/ResultPanels'
+import { LockedSection } from '@/components/LockedSection'
 
 export function ResultPage() {
   const navigate = useNavigate()
@@ -72,7 +73,15 @@ export function ResultPage() {
           publishInfo={publishInfo}
         />
 
-        <ResultPanels chart={chart} forecast={forecast} />
+        <ResultPanelBestHour forecast={forecast} />
+
+        <LockedSection
+          feature="result_panels"
+          title="解锁完整 7 张面板"
+          subtitle="八字简析、运势构成四维、当日黄历宜忌、奇门时局、未来吉日—— 兑换邀请码后一并展开。"
+        >
+          <ResultPanelsLocked chart={chart} forecast={forecast} />
+        </LockedSection>
 
         <Reveal>
           <motion.button

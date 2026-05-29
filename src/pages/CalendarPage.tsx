@@ -6,6 +6,8 @@ import { useBaZiChart } from '@/hooks/useBaZiChart'
 import { computeCalendar, computeDailyFortune, scoreGrade } from '@/domain/scoring'
 import type { DayScore } from '@/domain/scoring'
 import { Card, NeedBaZi, QiChangPill } from '@/components/ui'
+import { LockedSection } from '@/components/LockedSection'
+import { useInvite } from '@/features/invite'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { Reveal } from '@/motion/Reveal'
 import { spring } from '@/motion/transitions'
@@ -23,7 +25,17 @@ function tone(score: number): { bg: string; text: string } {
 
 export function CalendarPage() {
   const { baziInput, ready } = useAppState()
+  const { unlocked } = useInvite()
   const today = toYmd(new Date())
+
+  // 当前自然周（周日起，含今日的 7 天），未解锁时仅这 7 天可见分数
+  const { weekStart, weekEnd } = useMemo(() => {
+    const t = new Date()
+    const s = new Date(t.getFullYear(), t.getMonth(), t.getDate() - t.getDay())
+    const e = new Date(s)
+    e.setDate(s.getDate() + 6)
+    return { weekStart: toYmd(s), weekEnd: toYmd(e) }
+  }, [])
 
   const [month, setMonth] = useState(() => {
     const d = new Date()
@@ -146,36 +158,52 @@ export function CalendarPage() {
                     const inMonth = dt.getMonth() === month.getMonth()
                     const isToday = d.date === today
                     const isPast = d.date < today
+                    const cellLocked = !unlocked && (d.date < weekStart || d.date > weekEnd)
                     const t = tone(d.score)
                     const row = Math.floor(i / 7)
                     return (
                       <motion.button
                         key={d.date}
                         type="button"
-                        onClick={() => setSelected(d.date)}
-                        whileTap={{ scale: 0.93 }}
+                        onClick={() => {
+                          if (cellLocked) return
+                          setSelected(d.date)
+                        }}
+                        disabled={cellLocked}
+                        aria-disabled={cellLocked}
+                        whileTap={cellLocked ? undefined : { scale: 0.93 }}
                         initial={{ opacity: 0, scale: 0.85 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{
                           duration: 0.32,
                           delay: 0.04 + row * 0.04 + (i % 7) * 0.012,
                         }}
-                        className={`relative flex h-13 cursor-pointer flex-col items-center justify-center rounded-lg transition-colors ${t.bg} ${
-                          inMonth ? '' : 'opacity-30'
-                        } ${isPast ? 'opacity-45' : ''} ${
-                          isToday ? 'ring-1 ring-jin-bright' : ''
-                        }`}
+                        className={`relative flex h-13 flex-col items-center justify-center rounded-lg transition-colors ${
+                          cellLocked
+                            ? 'cursor-not-allowed bg-white/3'
+                            : `cursor-pointer ${t.bg}`
+                        } ${inMonth ? '' : 'opacity-30'} ${
+                          !cellLocked && isPast ? 'opacity-45' : ''
+                        } ${isToday ? 'ring-1 ring-jin-bright' : ''}`}
                       >
-                        {selected === d.date && (
+                        {selected === d.date && !cellLocked && (
                           <motion.span
                             layoutId="calSelected"
                             className="absolute inset-0 rounded-lg ring-2 ring-zhusha-bright"
                             transition={{ type: 'spring', stiffness: 360, damping: 28 }}
                           />
                         )}
-                        <span className="text-xs text-mibai">{dt.getDate()}</span>
-                        <span className={`text-[11px] font-semibold tabular-nums ${t.text}`}>
-                          {d.score}
+                        <span
+                          className={`text-xs ${cellLocked ? 'text-qingmo-mute' : 'text-mibai'}`}
+                        >
+                          {dt.getDate()}
+                        </span>
+                        <span
+                          className={`text-[11px] font-semibold tabular-nums ${
+                            cellLocked ? 'text-qingmo-mute' : t.text
+                          }`}
+                        >
+                          {cellLocked ? '🔒' : d.score}
                         </span>
                       </motion.button>
                     )
@@ -191,6 +219,14 @@ export function CalendarPage() {
             </div>
           </Card>
         </Reveal>
+
+        <LockedSection
+          feature="calendar"
+          title="解锁全月吉日热力图"
+          subtitle="本周外的吉日分数已锁。兑换邀请码后可查看任意月份的完整发布日热力图。"
+        >
+          {null}
+        </LockedSection>
 
         <AnimatePresence>
           {detail && (

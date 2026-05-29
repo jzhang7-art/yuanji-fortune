@@ -10,6 +10,9 @@ type EventName =
   | 'talent_view'
   | 'share_attempt'
   | 'edit_bazi'
+  | 'invite_prompt_shown'
+  | 'invite_redeem_attempt'
+  | 'invite_redeem_success'
 
 let posthog: any = null
 

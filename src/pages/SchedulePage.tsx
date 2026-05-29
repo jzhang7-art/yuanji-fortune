@@ -7,6 +7,8 @@ import { computeSchedule, scoreGrade } from '@/domain/scoring'
 import { VIDEO_TYPES } from '@/data/videoTypes'
 import { PLATFORMS } from '@/data/scoringConfig'
 import { Card, ElementBadge, NeedBaZi, ScoreBar } from '@/components/ui'
+import { LockedSection } from '@/components/LockedSection'
+import { useInvite } from '@/features/invite'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
 import { Reveal } from '@/motion/Reveal'
@@ -17,9 +19,12 @@ const WINDOW = 14
 const MIN_COUNT = 2
 const MAX_COUNT = 7
 
+const FREE_PICK_COUNT = 2
+
 export function SchedulePage() {
   const { baziInput, ready } = useAppState()
   const chart = useBaZiChart()
+  const { unlocked } = useInvite()
   const [videoTypeId, setVideoTypeId] = useState('')
   const [platform, setPlatform] = useState<string>(PLATFORMS[0])
   const [count, setCount] = useState(3)
@@ -146,77 +151,93 @@ export function SchedulePage() {
             <Reveal>
               <Card title="发布排期表" subtitle={`${result.video.name} · ${count} 条`}>
                 <div className="flex flex-col gap-2">
-                  {result.picked.map((slot, i) => (
-                    <motion.div
-                      key={slot.date}
-                      initial={{ opacity: 0, scale: 0.92, x: -8 }}
-                      animate={{ opacity: 1, scale: 1, x: 0 }}
-                      transition={{ ...spring, delay: 0.05 + i * 0.07 }}
-                      className="flex items-center gap-3 rounded-xl bg-ru-deep p-3"
-                    >
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-jin-bright text-sm font-bold text-ru">
-                        {i + 1}
-                      </span>
-                      <div className="flex-1">
-                        <div className="text-base font-semibold text-mibai">
-                          {formatDate(slot.date)} {slot.weekday}
-                        </div>
-                        <div className="text-xs text-qingmo">
-                          {slot.bestHour.name} {slot.bestHour.range} · {slot.dayGanZhi}日
-                        </div>
-                      </div>
-                      <span className="text-xl font-bold tabular-nums text-jin-bright">
-                        {slot.dayScore}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs leading-relaxed text-qingmo-mute">
-                  第 1 条最早发布。每天仅排 1 条，避免同类内容自相分流；如需赶进度可在相邻吉日补发。
-                </p>
-              </Card>
-            </Reveal>
-
-            <Reveal>
-              <Card title={`未来 ${WINDOW} 天发布指数`} subtitle="深色为已选档期">
-                <div className="flex flex-col gap-2">
-                  {result.all.map((slot, i) => {
-                    const isPicked = result.picked.some((p) => p.date === slot.date)
-                    return (
-                      <div key={slot.date} className="flex items-center gap-2">
-                        <span
-                          className={`w-20 shrink-0 text-xs ${
-                            isPicked ? 'font-semibold text-jin-bright' : 'text-qingmo'
-                          }`}
-                        >
-                          {formatDate(slot.date)} {slot.weekday}
+                  {(unlocked ? result.picked : result.picked.slice(0, FREE_PICK_COUNT)).map(
+                    (slot, i) => (
+                      <motion.div
+                        key={slot.date}
+                        initial={{ opacity: 0, scale: 0.92, x: -8 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{ ...spring, delay: 0.05 + i * 0.07 }}
+                        className="flex items-center gap-3 rounded-xl bg-ru-deep p-3"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-jin-bright text-sm font-bold text-ru">
+                          {i + 1}
                         </span>
                         <div className="flex-1">
-                          <ScoreBar value={slot.dayScore} delay={0.05 + i * 0.025} />
+                          <div className="text-base font-semibold text-mibai">
+                            {formatDate(slot.date)} {slot.weekday}
+                          </div>
+                          <div className="text-xs text-qingmo">
+                            {slot.bestHour.name} {slot.bestHour.range} · {slot.dayGanZhi}日
+                          </div>
                         </div>
-                        <span className="w-8 shrink-0 text-right text-xs tabular-nums text-mibai">
+                        <span className="text-xl font-bold tabular-nums text-jin-bright">
                           {slot.dayScore}
                         </span>
-                      </div>
-                    )
-                  })}
+                      </motion.div>
+                    ),
+                  )}
                 </div>
+                {unlocked ? (
+                  <p className="mt-3 text-xs leading-relaxed text-qingmo-mute">
+                    第 1 条最早发布。每天仅排 1 条，避免同类内容自相分流；如需赶进度可在相邻吉日补发。
+                  </p>
+                ) : (
+                  result.picked.length > FREE_PICK_COUNT && (
+                    <p className="mt-3 text-xs leading-relaxed text-zhusha-bright/85">
+                      余 {result.picked.length - FREE_PICK_COUNT} 期已锁，兑换邀请码后展开完整排期。
+                    </p>
+                  )
+                )}
               </Card>
             </Reveal>
 
-            <Reveal>
-              <div className="flex items-start gap-2 rounded-xl bg-ru-deep p-3">
-                <span className="flex gap-0.5 pt-0.5">
-                  {result.video.elements.map((e) => (
-                    <ElementBadge key={e} element={e} size="sm" />
-                  ))}
-                </span>
-                <p className="text-sm leading-relaxed text-mibai">
-                  首发档 {formatDate(result.picked[0].date)} {result.picked[0].weekday}，发布指数{' '}
-                  {result.picked[0].dayScore}（{scoreGrade(result.picked[0].dayScore).label}）。
-                </p>
-              </div>
-            </Reveal>
+            <LockedSection
+              feature="schedule"
+              title={`解锁 ${count} 期完整排期 + 14 天发布指数`}
+              subtitle="对比未来 14 天每一天的发布指数曲线，挑出全部档期与最佳首发时刻。"
+            >
+              <Reveal>
+                <Card title={`未来 ${WINDOW} 天发布指数`} subtitle="深色为已选档期">
+                  <div className="flex flex-col gap-2">
+                    {result.all.map((slot, i) => {
+                      const isPicked = result.picked.some((p) => p.date === slot.date)
+                      return (
+                        <div key={slot.date} className="flex items-center gap-2">
+                          <span
+                            className={`w-20 shrink-0 text-xs ${
+                              isPicked ? 'font-semibold text-jin-bright' : 'text-qingmo'
+                            }`}
+                          >
+                            {formatDate(slot.date)} {slot.weekday}
+                          </span>
+                          <div className="flex-1">
+                            <ScoreBar value={slot.dayScore} delay={0.05 + i * 0.025} />
+                          </div>
+                          <span className="w-8 shrink-0 text-right text-xs tabular-nums text-mibai">
+                            {slot.dayScore}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              </Reveal>
+
+              <Reveal>
+                <div className="flex items-start gap-2 rounded-xl bg-ru-deep p-3">
+                  <span className="flex gap-0.5 pt-0.5">
+                    {result.video.elements.map((e) => (
+                      <ElementBadge key={e} element={e} size="sm" />
+                    ))}
+                  </span>
+                  <p className="text-sm leading-relaxed text-mibai">
+                    首发档 {formatDate(result.picked[0].date)} {result.picked[0].weekday}，发布指数{' '}
+                    {result.picked[0].dayScore}（{scoreGrade(result.picked[0].dayScore).label}）。
+                  </p>
+                </div>
+              </Reveal>
+            </LockedSection>
           </>
         )}
       </StaggerList>

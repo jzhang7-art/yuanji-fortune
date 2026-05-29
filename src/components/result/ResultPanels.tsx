@@ -9,9 +9,64 @@ export interface ResultPanelsProps {
   forecast: Forecast
 }
 
-export function ResultPanels({ chart, forecast }: ResultPanelsProps) {
+/**
+ * 免费面板：今日最佳发布时辰。
+ * 与 ResultHero 一起构成「免费看完一次单期测算」的核心交付。
+ */
+export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
   const { target } = forecast
   const topHourIdx = new Set(forecast.bestHours.slice(0, 3).map((h) => h.shiChenIndex))
+  const bestHour = forecast.bestHours[0]
+
+  return (
+    <Reveal>
+      <Card title="今日最佳发布时辰" subtitle={`首选 ${bestHour.name}`}>
+        <div className="mb-3 rounded-xl bg-ru-deep p-3 text-center">
+          <span className="text-sm text-qingmo">流量最旺时段</span>
+          <div className="text-xl font-semibold text-jin-bright">
+            {bestHour.name} {bestHour.range}
+          </div>
+          <span className="text-xs text-qingmo">综合发布指数 {bestHour.score}</span>
+        </div>
+        <div className="flex flex-col gap-2">
+          {target.hours.map((h, i) => (
+            <div key={h.shiChenIndex} className="flex items-center gap-2">
+              <span className="w-14 shrink-0">
+                <span className="relative inline-block text-xs text-qingmo">
+                  {h.name}
+                  {topHourIdx.has(h.shiChenIndex) && (
+                    <span
+                      className="absolute -right-3 -top-2 rotate-[-12deg] select-none rounded-[3px] border border-zhusha-bright/80 bg-zhusha-bright/15 px-[3px] text-[10px] font-bold leading-[1.5] text-zhusha-bright"
+                      title="推荐时辰"
+                    >
+                      荐
+                    </span>
+                  )}
+                </span>
+              </span>
+              <div className="flex-1">
+                <ScoreBar value={h.score} delay={0.05 + i * 0.04} />
+              </div>
+              <span className="w-8 shrink-0 text-right text-xs tabular-nums text-mibai">
+                {h.score}
+              </span>
+              <span className="flex w-7 shrink-0 justify-center">
+                {h.platformPeak && <PeakLabel />}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </Reveal>
+  )
+}
+
+/**
+ * 锁后面板：运势构成 / 八字简析 / 当日黄历 / 奇门遁甲 / 未来 N 天吉日。
+ * 用 LockedSection 包裹后，未兑换邀请码用户看到兑换卡。
+ */
+export function ResultPanelsLocked({ chart, forecast }: ResultPanelsProps) {
+  const { target } = forecast
   const bestHour = forecast.bestHours[0]
   const topDayDates = new Set(forecast.bestDays.slice(0, 3).map((d) => d.date))
   const bestDay = forecast.bestDays[0]
@@ -97,46 +152,6 @@ export function ResultPanels({ chart, forecast }: ResultPanelsProps) {
               <div key={h.label} className="flex items-center justify-between text-xs">
                 <span className="text-qingmo">{h.label}</span>
                 <span className="text-jin-bright">{h.quality} 分</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </Reveal>
-
-      <Reveal>
-        <Card title="今日最佳发布时辰" subtitle={`首选 ${bestHour.name}`}>
-          <div className="mb-3 rounded-xl bg-ru-deep p-3 text-center">
-            <span className="text-sm text-qingmo">流量最旺时段</span>
-            <div className="text-xl font-semibold text-jin-bright">
-              {bestHour.name} {bestHour.range}
-            </div>
-            <span className="text-xs text-qingmo">综合发布指数 {bestHour.score}</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {target.hours.map((h, i) => (
-              <div key={h.shiChenIndex} className="flex items-center gap-2">
-                <span className="w-14 shrink-0">
-                  <span className="relative inline-block text-xs text-qingmo">
-                    {h.name}
-                    {topHourIdx.has(h.shiChenIndex) && (
-                      <span
-                        className="absolute -right-3 -top-2 rotate-[-12deg] select-none rounded-[3px] border border-zhusha-bright/80 bg-zhusha-bright/15 px-[3px] text-[10px] font-bold leading-[1.5] text-zhusha-bright"
-                        title="推荐时辰"
-                      >
-                        荐
-                      </span>
-                    )}
-                  </span>
-                </span>
-                <div className="flex-1">
-                  <ScoreBar value={h.score} delay={0.05 + i * 0.04} />
-                </div>
-                <span className="w-8 shrink-0 text-right text-xs tabular-nums text-mibai">
-                  {h.score}
-                </span>
-                <span className="flex w-7 shrink-0 justify-center">
-                  {h.platformPeak && <PeakLabel />}
-                </span>
               </div>
             ))}
           </div>

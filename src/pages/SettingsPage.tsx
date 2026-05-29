@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2, Bell, Tag, ShieldOff } from 'lucide-react'
+import { RefreshCw, Trash2, Bell, Tag, ShieldOff, KeyRound } from 'lucide-react'
 import { clearHistory, eraseAllUserData, loadHistory } from '@/storage'
 import { RowLink, RowGroup } from '@/components/RowLink'
+import { RedeemCard } from '@/components/LockedSection'
+import { useInvite } from '@/features/invite'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
 import { alert, confirm } from '@/platform/dialog'
@@ -11,6 +13,7 @@ const ICON_STROKE = 1.5
 
 export function SettingsPage() {
   const [count, setCount] = useState<number | null>(null)
+  const invite = useInvite()
 
   useEffect(() => {
     loadHistory().then((r) => setCount(r.length))
@@ -44,6 +47,26 @@ export function SettingsPage() {
               label="重排生辰八字"
               to="/lotus"
             />
+          </RowGroup>
+        </StaggerItem>
+
+        <StaggerItem>
+          <RowGroup title="邀 请 码">
+            {invite.unlocked ? (
+              <RowLink
+                icon={<KeyRound size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
+                label="已解锁全部功能"
+                trailing={invite.code ?? undefined}
+                showChevron={false}
+                onClick={() => {}}
+              />
+            ) : (
+              <RedeemCard
+                feature="settings"
+                title="输入邀请码解锁全部功能"
+                subtitle="解锁后可看完整结果详解、14 天排期、全月吉日热力图、全部命定赛道排名。"
+              />
+            )}
           </RowGroup>
         </StaggerItem>
 
