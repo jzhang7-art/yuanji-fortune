@@ -1,5 +1,6 @@
 // 分享卡片预览/保存弹层：离屏渲染 ShareCard → html-to-image 栅格化为 PNG
 import { useEffect, useRef, useState } from 'react'
+import { track } from '@/analytics/track'
 import { toPng } from 'html-to-image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ShareCard, type ShareCardProps } from '@/components/ShareCard'
@@ -102,6 +103,7 @@ export function ShareCardModal({
                 download="玄机-发布择时.png"
                 whileTap={{ scale: 0.98 }}
                 className="w-full rounded-xl bg-gradient-to-b from-gold-bright to-gold py-3 text-center text-base font-semibold text-ink"
+                onClick={() => track('share_attempt', { surface: 'result-modal' })}
               >
                 保存图片
               </motion.a>

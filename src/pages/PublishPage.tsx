@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { track } from '@/analytics/track'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppState } from '@/state/AppState'
@@ -55,6 +56,7 @@ export function PublishPage() {
       platform,
       targetDate,
     })
+    track('publish_calc', { platform, videoType: videoTypeId })
     navigate('/result')
   }
 

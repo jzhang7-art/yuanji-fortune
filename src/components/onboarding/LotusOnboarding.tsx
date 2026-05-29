@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent as RPointerEvent } from 'react'
+import { track } from '@/analytics/track'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAppState } from '@/state/AppState'
@@ -62,6 +63,7 @@ export function LotusOnboarding({ mode = 'onboarding' }: { mode?: 'onboarding' |
 
   function handleEnter() {
     if (!valid || committing) return
+    track('bazi_submit', { gender: gIdx === 0 ? '男' : '女', mode })
     setCommitting(true)
     const commit = () => {
       setBaziInput({ year, month, day, shiChenIndex: sIdx, gender: gIdx === 0 ? '男' : '女' })
