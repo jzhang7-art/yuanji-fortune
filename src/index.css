@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+
+@theme {
+  /* === V2 主体色（汝窑天青墨 × 朱砂金 × 石青石绿） === */
+  --color-ru: #1a2228;          /* 汝窑天青墨主底色 */
+  --color-ru-deep: #131a20;     /* 卡片下沉色 / 网格背景 */
+  --color-ru-soft: #232c33;     /* 卡片上浮色 / 玉卡底 */
+  --color-shiqing: #4a7396;     /* 石青：详情/平稳/补充信息 */
+  --color-shilv: #5a8a6a;       /* 石绿：吉态信息 */
+  --color-zhusha: #b23a2e;      /* 朱砂：吉/选中/警示强色 */
+  --color-zhusha-bright: #d4524a;
+  --color-jin: #c8a45c;         /* 金：运势数据高亮 */
+  --color-jin-bright: #e6c878;
+  --color-mibai: #d8d0c2;       /* 米白主文字 */
+  --color-qingmo: #8a9098;      /* 青墨次文字 */
+  --color-qingmo-mute: #5e6770; /* 极弱辅文字（5:1 对比） */
+  --color-zhusha-glow: rgba(212, 82, 74, 0.35);
+  --color-jin-glow: rgba(230, 200, 120, 0.28);
+
+  /* === V1 别名（同值映射，保持现有 class 名兼容；Day5 全量替换后可删） === */
+  --color-ink: #1a2228;
+  --color-ink-soft: #131a20;
+  --color-ink-card: #232c33;
+  --color-gold: #c8a45c;
+  --color-gold-bright: #e6c878;
+  --color-cinnabar: #b23a2e;
+  --color-cinnabar-bright: #d4524a;
+  --color-jade: #5a8a6a;
+  --color-parchment: #d8d0c2;
+  --color-parchment-soft: #8a9098;
+  --color-parchment-muted: #5e6770;
+  --color-cinnabar-glow: rgba(212, 82, 74, 0.35);
+  --color-gold-glow: rgba(230, 200, 120, 0.28);
+
+  /* === 阴影 === */
+  --shadow-jin: 0 6px 24px -8px rgba(230, 200, 120, 0.25), 0 0 0 1px rgba(230, 200, 120, 0.10);
+  --shadow-zhu: 0 8px 28px -10px rgba(212, 82, 74, 0.35), 0 0 0 1px rgba(212, 82, 74, 0.12);
+  /* 玉卡釉光：底部深阴影做悬浮、贴边柔阴影做厚度、顶部内描高光做釉面 */
+  --shadow-yu:
+    0 1px 0 rgba(255, 255, 255, 0.035) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45) inset,
+    0 2px 6px -2px rgba(0, 0, 0, 0.35),
+    0 12px 32px -12px rgba(0, 0, 0, 0.55);
+  /* 金箔描边：顶亮底暗、外柔光、内釉面（仅 Hero 用） */
+  --shadow-gilt:
+    0 0 0 0.5px rgba(230, 200, 120, 0.55),
+    0 1px 0 rgba(255, 220, 150, 0.18) inset,
+    0 -1px 0 rgba(120, 90, 30, 0.35) inset,
+    0 2px 8px -2px rgba(0, 0, 0, 0.4),
+    0 18px 44px -16px rgba(180, 140, 60, 0.22),
+    0 24px 60px -20px rgba(0, 0, 0, 0.6);
+
+  /* === 字体 === */
+  --font-serif-cn: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', 'SimSun', 'Songti SC', serif;
+  --font-mono-cn: 'JetBrains Mono', 'Noto Sans Mono CJK SC', 'Sarasa Mono SC', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-ru);
+  color: var(--color-mibai);
+  font-family: var(--font-serif-cn);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 数据/数字用等宽字体：在内联元素加 .num 可触发 */
+.num,
+.tabular-nums {
+  font-family: var(--font-mono-cn);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 玉卡：宋瓷釉光多层堆叠（drop + soft + inset hairline + bottom shade） */
+.yu-card {
+  box-shadow: var(--shadow-yu);
+}
+
+/* 金箔描边：Hero 专属，顶亮底暗的 0.5px 渐变描边 + 外柔光 + 内釉面 */
+.jin-gilt {
+  box-shadow: var(--shadow-gilt);
+  background-image:
+    linear-gradient(180deg, rgba(230, 200, 120, 0.04) 0%, rgba(0, 0, 0, 0) 35%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.18) 100%);
+}
+
+/* 键盘焦点环：石青冷光 */
+:focus-visible {
+  outline: 2px solid var(--color-shiqing);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 入场动画由 framer-motion + variants 接管；仅保留 reduced-motion 兜底 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
