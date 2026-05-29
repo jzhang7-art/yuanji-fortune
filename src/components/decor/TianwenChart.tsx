@@ -157,8 +157,8 @@ export function TianwenChart({
     <div style={{ width: size, height: size }} aria-hidden>
       <Canvas
         camera={{ position: [0, 4.0, 1.5], fov: 40, near: 0.1, far: 50 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: false, alpha: true, powerPreference: 'low-power' }}
         frameloop={reduced ? 'demand' : 'always'}
         onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
         onError={() => setFailed(true)}
