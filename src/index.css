@@ -89,11 +89,26 @@ body {
     linear-gradient(180deg, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 0.18) 100%);
 }
 
-/* 键盘焦点环：石青冷光 */
-:focus-visible {
+/* 键盘焦点环：表单元素用石青冷光（按钮/链接由 @layer base 的金色 ring 接管，避免双环）*/
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--color-shiqing);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* 触摸目标基线：所有可点击元素 ≥ 44×44 CSS px（WCAG 2.5.5 AAA）+ 金色 focus ring */
+@layer base {
+  button,
+  a,
+  [role="button"],
+  [role="link"] {
+    @apply min-h-11 outline-none;
+  }
+  :where(button, a, [role="button"], [role="link"]):focus-visible {
+    @apply ring-2 ring-jin/60 ring-offset-2 ring-offset-ru;
+  }
 }
 
 /* 入场动画由 framer-motion + variants 接管；仅保留 reduced-motion 兜底 */
