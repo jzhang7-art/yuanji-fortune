@@ -16,8 +16,13 @@ let posthog: any = null
 async function ensureLoaded(): Promise<any> {
   if (posthog) return posthog
   if (getConsent() !== 'granted') return null
+  const key = import.meta.env.VITE_POSTHOG_KEY
+  if (!key) {
+    if (import.meta.env.DEV) console.warn('[track] VITE_POSTHOG_KEY 未设置 — 事件被丢弃。在 .env.local 中配置后重启 dev server 生效。')
+    return null
+  }
   const { default: ph } = await import('posthog-js')
-  ph.init(import.meta.env.VITE_POSTHOG_KEY ?? '', {
+  ph.init(key, {
     api_host: 'https://us.i.posthog.com',
     persistence: 'localStorage',
     autocapture: false,
@@ -31,6 +36,7 @@ async function ensureLoaded(): Promise<any> {
 export async function track(event: EventName, props?: Record<string, unknown>): Promise<void> {
   if (getConsent() !== 'granted') return
   const ph = await ensureLoaded()
+  if (import.meta.env.DEV && ph) console.debug('[track]', event, props ?? {})
   ph?.capture(event, props)
 }
 
