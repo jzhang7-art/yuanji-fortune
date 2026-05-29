@@ -33,6 +33,8 @@ async function ensureLoaded(): Promise<any> {
     disable_session_recording: true,
   })
   posthog = ph
+  // 暴露到 window 方便外部调试 / 真机校验（生产无副作用，已 init 后引用）
+  ;(window as any).posthog = ph
   return ph
 }
 
