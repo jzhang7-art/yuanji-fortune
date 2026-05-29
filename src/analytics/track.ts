@@ -31,6 +31,9 @@ async function ensureLoaded(): Promise<any> {
     autocapture: false,
     capture_pageview: false,
     disable_session_recording: true,
+    // 我们不要求用户登录就要看到漏斗，所以匿名也要建 person profile，
+    // 否则 PostHog 默认 defaultIdentifiedOnly=true 会把匿名事件全部丢掉。
+    person_profiles: 'always',
   })
   posthog = ph
   // 暴露到 window 方便外部调试 / 真机校验（生产无副作用，已 init 后引用）
