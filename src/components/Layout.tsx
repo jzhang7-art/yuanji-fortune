@@ -43,9 +43,15 @@ export function Layout({ children }: { children: ReactNode }) {
 export function Disclaimer() {
   return (
     <footer className="mt-8 border-t border-shiqing/10 px-4 pt-5 text-center text-xs leading-relaxed text-qingmo-mute">
-      本应用基于八字、黄历、奇门遁甲等传统术数文化，结果由算法推演得出，
-      <br />
-      仅供娱乐参考，不构成任何决策建议。内容能否传播取决于选题、质量与平台机制。
+      <p>
+        本应用基于八字、黄历、奇门遁甲等传统术数文化，结果由算法推演得出，
+        <br />
+        <strong className="text-qingmo">仅供娱乐参考，不构成任何医疗、法律、投资、生育、命运决策建议。</strong>
+      </p>
+      <p className="mt-2">
+        内容能否传播取决于选题、质量与平台机制，本应用不对实际发布效果作任何承诺。
+      </p>
+      <p className="mt-2 text-[10px] text-qingmo-mute/70">© 2026 玄机 · 发布择时</p>
     </footer>
   )
 }
