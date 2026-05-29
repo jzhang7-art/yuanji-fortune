@@ -19,7 +19,7 @@ export default defineConfig({
       strategies: 'generateSW',
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,webp,woff2}'],
         navigateFallback: `${BASE}index.html`,
         navigateFallbackDenylist: [/^\/api\//],
       },

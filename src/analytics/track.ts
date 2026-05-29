@@ -13,6 +13,8 @@ type EventName =
   | 'invite_prompt_shown'
   | 'invite_redeem_attempt'
   | 'invite_redeem_success'
+  | 'contact_wechat_view'
+  | 'contact_wechat_copy'
 
 let posthog: any = null
 

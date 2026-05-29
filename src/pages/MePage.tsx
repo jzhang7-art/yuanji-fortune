@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Compass,
   History,
   Share2,
-  Mail,
+  MessageCircle,
   Info,
   Settings,
   FileText,
@@ -15,6 +16,7 @@ import { useBaZiChart } from '@/hooks/useBaZiChart'
 import { SHI_CHEN } from '@/data/ganzhi'
 import { WU_XING_COLOR } from '@/domain/wuxing'
 import { RowLink, RowGroup } from '@/components/RowLink'
+import { WeChatModal } from '@/components/WeChatContact'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
 import { sharePayload, getOriginUrl } from '@/platform/share'
@@ -25,6 +27,7 @@ const ICON_STROKE = 1.5
 export function MePage() {
   const { baziInput, ready } = useAppState()
   const chart = useBaZiChart()
+  const [wechatOpen, setWechatOpen] = useState(false)
 
   function handleShare() {
     void sharePayload({
@@ -32,11 +35,6 @@ export function MePage() {
       text: '帮内容创作者找最佳发布时机',
       url: getOriginUrl(),
     })
-  }
-
-  function handleFeedback() {
-    if (typeof window === 'undefined') return
-    window.location.href = 'mailto:feedback@xuanji.app?subject=玄机反馈'
   }
 
   if (!ready) return <p className="py-20 text-center text-qingmo">载入中…</p>
@@ -121,9 +119,9 @@ export function MePage() {
               onClick={handleShare}
             />
             <RowLink
-              icon={<Mail size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
-              label="意见反馈"
-              onClick={handleFeedback}
+              icon={<MessageCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
+              label="联系作者 · 加微信"
+              onClick={() => setWechatOpen(true)}
             />
             <RowLink
               icon={<Info size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
@@ -155,6 +153,8 @@ export function MePage() {
         </StaggerItem>
 
       </StaggerList>
+
+      <WeChatModal open={wechatOpen} onClose={() => setWechatOpen(false)} source="me" />
     </FortuneScene>
   )
 }

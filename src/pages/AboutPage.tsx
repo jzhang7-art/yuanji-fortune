@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui'
+import { WeChatCard } from '@/components/WeChatContact'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
 
@@ -34,17 +35,7 @@ export function AboutPage() {
         </StaggerItem>
 
         <StaggerItem>
-          <Card title="联系我们" accent="shiqing">
-            <p className="text-sm text-qingmo">
-              意见与反馈请发邮件至：
-            </p>
-            <a
-              href="mailto:feedback@xuanji.app"
-              className="mt-1 inline-block text-sm text-jin-bright underline-offset-4 hover:underline"
-            >
-              feedback@xuanji.app
-            </a>
-          </Card>
+          <WeChatCard source="about" />
         </StaggerItem>
 
         <StaggerItem>
