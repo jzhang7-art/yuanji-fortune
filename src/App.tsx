@@ -4,6 +4,7 @@ import { AppStateProvider, useAppState } from '@/state/AppState'
 import { Layout } from '@/components/Layout'
 import { LotusOnboarding } from '@/components/onboarding/LotusOnboarding'
 import { PageTransition } from '@/motion/PageTransition'
+import { ConsentBanner } from '@/components/ConsentBanner'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })))
 const BaZiPage = lazy(() => import('@/pages/BaZiPage').then((m) => ({ default: m.BaZiPage })))
@@ -53,9 +54,12 @@ function Shell() {
   if (!ready) return <div className="min-h-dvh bg-ru" />
   if (!baziInput) return <LotusOnboarding />
   return (
-    <Layout>
-      <AnimatedRoutes />
-    </Layout>
+    <>
+      <Layout>
+        <AnimatedRoutes />
+      </Layout>
+      <ConsentBanner />
+    </>
   )
 }
 

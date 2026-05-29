@@ -44,3 +44,13 @@ export async function saveHistory(record: HistoryRecord): Promise<void> {
 export async function clearHistory(): Promise<void> {
   write(HISTORY_KEY, [])
 }
+
+const ALL_KEYS = ['zmf:bazi', 'zmf:history', 'zmf:publish', 'zmf:consent']
+
+export async function eraseAllUserData(): Promise<void> {
+  try {
+    for (const k of ALL_KEYS) localStorage.removeItem(k)
+  } catch {
+    // 私密模式下可能抛错，吞掉即可
+  }
+}
