@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { track } from '@/analytics/track'
 import { useAppState } from '@/state/AppState'
 import { useBaZiChart } from '@/hooks/useBaZiChart'
 import { computeDailyFortune, scoreGrade } from '@/domain/scoring'
@@ -42,6 +43,10 @@ export function DashboardPage() {
   useEffect(() => {
     setSession(sessionKey, '1')
   }, [sessionKey])
+
+  useEffect(() => {
+    if (chart) track('daily_lookup')
+  }, [chart])
 
   if (!ready) {
     return <p className="py-20 text-center text-qingmo">载入中…</p>

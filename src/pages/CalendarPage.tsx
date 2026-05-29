@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { track } from '@/analytics/track'
 import { useAppState } from '@/state/AppState'
 import { useBaZiChart } from '@/hooks/useBaZiChart'
 import { computeCalendar, computeDailyFortune, scoreGrade } from '@/domain/scoring'
@@ -31,6 +32,10 @@ export function CalendarPage() {
   const [selected, setSelected] = useState<string | null>(null)
 
   const chart = useBaZiChart()
+
+  useEffect(() => {
+    track('calendar_view')
+  }, [])
 
   const gridStart = useMemo(() => {
     const s = new Date(month)

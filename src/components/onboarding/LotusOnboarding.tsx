@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent as RPointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react'
 import { track } from '@/analytics/track'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
@@ -49,6 +49,10 @@ export function LotusOnboarding({ mode = 'onboarding' }: { mode?: 'onboarding' |
   const [sIdx, setS] = useState(prefill ? prefill.shiChenIndex : 6)
   const [gIdx, setG] = useState(prefill ? (prefill.gender === '男' ? 0 : 1) : 0)
   const [committing, setCommitting] = useState(false)
+
+  useEffect(() => {
+    if (isEdit) track('edit_bazi')
+  }, [isEdit])
 
   const year = YEAR_MIN + yIdx
   const month = mIdx + 1

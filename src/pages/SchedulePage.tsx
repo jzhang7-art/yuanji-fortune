@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { track } from '@/analytics/track'
 import { useAppState } from '@/state/AppState'
 import { useBaZiChart } from '@/hooks/useBaZiChart'
 import { computeSchedule, scoreGrade } from '@/domain/scoring'
@@ -22,6 +23,10 @@ export function SchedulePage() {
   const [videoTypeId, setVideoTypeId] = useState('')
   const [platform, setPlatform] = useState<string>(PLATFORMS[0])
   const [count, setCount] = useState(3)
+
+  useEffect(() => {
+    track('schedule_view')
+  }, [])
 
   const result = useMemo(() => {
     if (!chart || !videoTypeId) return null

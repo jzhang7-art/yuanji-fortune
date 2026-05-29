@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { track } from '@/analytics/track'
 import { useAppState } from '@/state/AppState'
 import { useBaZiChart } from '@/hooks/useBaZiChart'
 import type { BaZiChart } from '@/domain/bazi'
@@ -24,6 +25,10 @@ function affinityReason(video: VideoType, chart: BaZiChart): string {
 export function TalentPage() {
   const { baziInput, ready } = useAppState()
   const chart = useBaZiChart()
+
+  useEffect(() => {
+    track('talent_view')
+  }, [])
 
   const ranked = useMemo(() => {
     if (!chart) return null
