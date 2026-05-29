@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2, Bell, Tag } from 'lucide-react'
-import { clearHistory, loadHistory } from '@/storage'
+import { RefreshCw, Trash2, Bell, Tag, ShieldOff } from 'lucide-react'
+import { clearHistory, eraseAllUserData, loadHistory } from '@/storage'
 import { RowLink, RowGroup } from '@/components/RowLink'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
@@ -20,6 +20,12 @@ export function SettingsPage() {
     if (!confirm('确定清空全部测算记录？此操作不可撤销。')) return
     await clearHistory()
     setCount(0)
+  }
+
+  async function handleEraseAll() {
+    if (!confirm('确定重置所有本地数据？此操作不可撤销，将清除生辰、历史、同意状态与分析数据，应用回到初次进入状态。')) return
+    await eraseAllUserData()
+    window.location.replace('/')
   }
 
   return (
@@ -48,6 +54,13 @@ export function SettingsPage() {
               label="清空测算历史"
               trailing={count !== null ? `${count} 条` : undefined}
               onClick={handleClear}
+              tone="danger"
+            />
+            <RowLink
+              icon={<ShieldOff size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
+              label="重置所有本地数据"
+              trailing="不可撤销"
+              onClick={handleEraseAll}
               tone="danger"
             />
           </RowGroup>

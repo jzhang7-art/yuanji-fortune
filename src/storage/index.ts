@@ -50,6 +50,10 @@ const ALL_KEYS = ['zmf:bazi', 'zmf:history', 'zmf:publish', 'zmf:consent']
 export async function eraseAllUserData(): Promise<void> {
   try {
     for (const k of ALL_KEYS) localStorage.removeItem(k)
+    // PostHog 自有 key 前缀（ph_<token>_posthog / __ph_opt_in_out_<token> 等）— 一并清除以兑现「删除全部本地数据」承诺
+    for (const k of Object.keys(localStorage)) {
+      if (k.startsWith('ph_') || k.startsWith('__ph_')) localStorage.removeItem(k)
+    }
   } catch {
     // 私密模式下可能抛错，吞掉即可
   }
