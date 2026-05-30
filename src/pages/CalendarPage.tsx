@@ -172,11 +172,11 @@ export function CalendarPage() {
                         disabled={cellLocked}
                         aria-disabled={cellLocked}
                         whileTap={cellLocked ? undefined : { scale: 0.93 }}
-                        initial={{ opacity: 0, scale: 0.85 }}
-                        animate={{ opacity: 1, scale: 1 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         transition={{
-                          duration: 0.32,
-                          delay: 0.04 + row * 0.04 + (i % 7) * 0.012,
+                          duration: 0.22,
+                          delay: 0.02 + row * 0.02,
                         }}
                         className={`relative flex h-13 flex-col items-center justify-center rounded-lg transition-colors ${
                           cellLocked
