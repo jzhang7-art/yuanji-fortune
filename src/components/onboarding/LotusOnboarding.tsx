@@ -8,6 +8,7 @@ import { BAZI_YEAR_MIN, BAZI_YEAR_MAX } from '@/data/constants'
 import { easeOut } from '@/motion/transitions'
 import Magnet from '@/lib/react-bits/Magnet'
 import ClickSpark from '@/lib/react-bits/ClickSpark'
+import { tickFeedback } from '@/util/feedback'
 
 /**
  * 莲启 · 入局 —— 首启引导（无八字时全屏呈现）
@@ -41,13 +42,13 @@ export function LotusOnboarding({ mode = 'onboarding' }: { mode?: 'onboarding' |
   const reduced = useReducedMotion()
   const isEdit = mode === 'edit'
 
-  // edit 模式从已存八字 prefill,否则用默认初值
+  // edit 模式从已存八字 prefill,否则用默认初值 2000-01-01 午时 女
   const prefill = isEdit && baziInput ? baziInput : null
-  const [yIdx, setY] = useState(prefill ? prefill.year - YEAR_MIN : 35)
-  const [mIdx, setM] = useState(prefill ? prefill.month - 1 : 7)
-  const [dIdx, setD] = useState(prefill ? prefill.day - 1 : 14)
+  const [yIdx, setY] = useState(prefill ? prefill.year - YEAR_MIN : 2000 - YEAR_MIN)
+  const [mIdx, setM] = useState(prefill ? prefill.month - 1 : 0)
+  const [dIdx, setD] = useState(prefill ? prefill.day - 1 : 0)
   const [sIdx, setS] = useState(prefill ? prefill.shiChenIndex : 6)
-  const [gIdx, setG] = useState(prefill ? (prefill.gender === '男' ? 0 : 1) : 0)
+  const [gIdx, setG] = useState(prefill ? (prefill.gender === '男' ? 0 : 1) : 1)
   const [committing, setCommitting] = useState(false)
 
   useEffect(() => {
@@ -193,6 +194,10 @@ export function LotusOnboarding({ mode = 'onboarding' }: { mode?: 'onboarding' |
         animate={{ opacity: 1, y: 0 }}
         transition={reduced ? { duration: 0 } : { duration: 0.6, delay: 1.4 }}
       >
+        <p className="text-xs tracking-[0.18em] text-qingmo">
+          {SHI_CHEN[sIdx].name}{' '}
+          <span className="tabular-nums text-qingmo-mute">{SHI_CHEN[sIdx].range}</span>
+        </p>
         {!valid && <p className="text-xs tracking-[0.1em] text-zhusha-bright">该月无此日 · 请重拨日轮</p>}
         <Magnet
           padding={40}
@@ -241,23 +246,39 @@ function Wheel({
 }) {
   const [dragOffset, setDragOffset] = useState<number | null>(null)
   const drag = useRef<{ startY: number; startOff: number } | null>(null)
+  const hoverIdxRef = useRef(index)
 
   const offset = dragOffset ?? baseOffset(index)
+
+  function offsetToIdx(off: number): number {
+    return Math.max(
+      0,
+      Math.min(values.length - 1, Math.round((WINDOW_H / 2 - ROW_H / 2 - off) / ROW_H)),
+    )
+  }
 
   function onDown(e: RPointerEvent) {
     if (disabled) return
     e.currentTarget.setPointerCapture(e.pointerId)
     drag.current = { startY: e.clientY, startOff: baseOffset(index) }
+    hoverIdxRef.current = index
     setDragOffset(baseOffset(index))
   }
   function onMove(e: RPointerEvent) {
     if (!drag.current) return
-    setDragOffset(drag.current.startOff + (e.clientY - drag.current.startY))
+    const next = drag.current.startOff + (e.clientY - drag.current.startY)
+    setDragOffset(next)
+    // 每跨一格触发齿轮 tick
+    const hoverIdx = offsetToIdx(next)
+    if (hoverIdx !== hoverIdxRef.current) {
+      hoverIdxRef.current = hoverIdx
+      tickFeedback()
+    }
   }
   function onUp() {
     if (!drag.current) return
     const off = dragOffset ?? baseOffset(index)
-    const idx = Math.max(0, Math.min(values.length - 1, Math.round((WINDOW_H / 2 - ROW_H / 2 - off) / ROW_H)))
+    const idx = offsetToIdx(off)
     drag.current = null
     setDragOffset(null)
     if (idx !== index) onChange(idx)
