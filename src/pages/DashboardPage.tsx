@@ -1,21 +1,28 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { track } from '@/analytics/track'
 import { useAppState } from '@/state/AppState'
 import { useBaZiChart } from '@/hooks/useBaZiChart'
-import { computeDailyFortune, scoreGrade } from '@/domain/scoring'
+import { computeDailyFortune, computeForecast, scoreGrade } from '@/domain/scoring'
 import { PLATFORMS } from '@/data/scoringConfig'
 import { TianwenHeroLazy as TianwenHero } from '@/components/decor/TianwenHero.lazy'
 import { AuroraBg } from '@/components/decor/AuroraBg'
 import { SkyDome28Xiu } from '@/components/decor/SkyDome28Xiu'
 import { FortuneDial } from '@/components/decor/FortuneDial'
-import { Card, ElementBadge } from '@/components/ui'
+import { Card, ElementBadge, ScoreBar } from '@/components/ui'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
 import { spring } from '@/motion/transitions'
-import type { VideoType } from '@/data/videoTypes'
+import { getVideoType, type VideoType } from '@/data/videoTypes'
 import { formatDate, toYmd } from '@/util'
 import { hasSession, setSession } from '@/platform/session'
+import {
+  loadPreferredTracks,
+  savePreferredTracks,
+  type PreferredTracks,
+} from '@/storage'
+import { TrackPickerSheet } from '@/components/TrackPickerSheet'
+import { MysticLoader } from '@/components/loading/MysticLoader'
 
 type HeroTone = 'gold' | 'parchment' | 'cinnabar'
 
@@ -25,17 +32,67 @@ function heroToneOf(tone: string): HeroTone {
   return 'parchment'
 }
 
+interface MyTrackScore {
+  video: VideoType
+  score: number
+}
+
 export function DashboardPage() {
   const navigate = useNavigate()
   const { baziInput, ready, setPublishInfo } = useAppState()
   const chart = useBaZiChart()
 
+  const [preferred, setPreferred] = useState<PreferredTracks | null>(null)
+  const [preferredLoaded, setPreferredLoaded] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [hoursOpen, setHoursOpen] = useState(false)
+  const [myTracks, setMyTracks] = useState<MyTrackScore[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void loadPreferredTracks().then((p) => {
+      if (cancelled) return
+      setPreferred(p)
+      setPreferredLoaded(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const effectivePlatform = preferred?.platform ?? PLATFORMS[0]
+
   const fortune = useMemo(() => {
     if (!chart) return null
-    return computeDailyFortune(chart, toYmd(new Date()))
-  }, [chart])
+    return computeDailyFortune(chart, toYmd(new Date()), effectivePlatform)
+  }, [chart, effectivePlatform])
 
-  // 同一天首次进入：完整 1.8s 揭示仪式；同日再次进入：压缩 50%
+  // 「我的赛道」分数:1-3 个 computeForecast 真口径,deferred 不阻塞首屏
+  useEffect(() => {
+    if (!chart || !preferred || preferred.trackIds.length === 0) {
+      setMyTracks(null)
+      return
+    }
+    let cancelled = false
+    const today = toYmd(new Date())
+    const raf = requestAnimationFrame(() => {
+      const scores = preferred.trackIds
+        .map((id) => {
+          const video = getVideoType(id)
+          if (!video) return null
+          const fc = computeForecast(chart, video, today, effectivePlatform)
+          return { video, score: fc.target.overall } as MyTrackScore
+        })
+        .filter((x): x is MyTrackScore => x !== null)
+      if (!cancelled) setMyTracks(scores)
+    })
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(raf)
+    }
+  }, [chart, preferred, effectivePlatform])
+
+  // 同一天首次进入:完整 1.8s 揭示仪式;同日再次进入:压缩 50%
   const sessionKey = `dash-hero-${toYmd(new Date())}`
   const isRevisit = hasSession(sessionKey)
   const compress = isRevisit ? 0.5 : 1
@@ -48,11 +105,17 @@ export function DashboardPage() {
     if (chart) track('daily_lookup')
   }, [chart])
 
-  if (!ready) {
-    return <p className="py-20 text-center text-qingmo">载入中…</p>
+  function handleSavePreferred(next: PreferredTracks) {
+    setPreferred(next)
+    void savePreferredTracks(next)
+    track('preferred_tracks_set', { count: next.trackIds.length, platform: next.platform })
   }
 
-  if (!baziInput || !fortune) {
+  if (!ready) {
+    return <MysticLoader variant="compact" />
+  }
+
+  if (!baziInput) {
     return (
       <StaggerList className="flex flex-col gap-4">
         <StaggerItem>
@@ -78,6 +141,10 @@ export function DashboardPage() {
     )
   }
 
+  if (!fortune) {
+    return <MysticLoader variant="compact" />
+  }
+
   const now = new Date()
   const curShiChen = Math.floor(((now.getHours() + 1) % 24) / 2)
   const upcoming = fortune.hours.filter((h) => h.shiChenIndex > curShiChen)
@@ -91,15 +158,14 @@ export function DashboardPage() {
 
   const grade = scoreGrade(fortune.dayScore)
   const heroTone = heroToneOf(grade.tone)
-  // grade.label 形如「吉 · 顺势可发」，拆成主词 + 副词分两层渲染
   const [verdictMain, verdictSub] = grade.label.split(/\s*·\s*/)
 
-  // 快测：从首页风向行点视频类型 → 用今日 + 默认平台 → 直接出结果
+  // 快测:从首页风向行点视频类型 → 用今日 + 用户主平台 → 直接出结果
   function quickTest(videoTypeId: string) {
     setPublishInfo({
       videoTypeId,
       title: '',
-      platform: PLATFORMS[0],
+      platform: effectivePlatform,
       targetDate: toYmd(new Date()),
     })
     navigate('/result')
@@ -119,7 +185,7 @@ export function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* 今日创作天时 Hero:真 3D 浑天仪 + 中央报文字;整片可点击 → 重排八字 */}
+      {/* 今日创作天时 Hero */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -132,7 +198,6 @@ export function DashboardPage() {
           aria-label="重排生辰八字"
           className="block w-full cursor-pointer rounded-3xl text-left"
         >
-          {/* Hero 容器：底层 bg + AuroraBg 天光 + SkyDome28Xiu 星宿环 + TianwenHero 透明模式 */}
           <div className="jin-gilt relative overflow-hidden rounded-3xl border border-jin/25 bg-ru-soft">
             <AuroraBg />
             <SkyDome28Xiu />
@@ -163,7 +228,7 @@ export function DashboardPage() {
         </motion.p>
       </motion.div>
 
-      {/* 下个吉时 */}
+      {/* 下个吉时 (可展开 12 时辰) */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -180,16 +245,94 @@ export function DashboardPage() {
             </div>
             <FortuneDial value={nextHour.score} size={88} stroke={6} label="指数" />
           </div>
+
+          <button
+            type="button"
+            onClick={() => setHoursOpen((v) => !v)}
+            aria-expanded={hoursOpen}
+            className="mt-3 flex w-full cursor-pointer items-center justify-center gap-1 rounded-lg py-2 text-xs text-shiqing transition-colors hover:bg-shiqing/8"
+          >
+            {hoursOpen ? '收起 12 时辰' : '展开 12 时辰'}
+            <motion.span
+              aria-hidden
+              animate={{ rotate: hoursOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              ▾
+            </motion.span>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {hoursOpen && (
+              <motion.div
+                key="hours"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="mt-2 flex flex-col gap-2 pt-2">
+                  {fortune.hours.map((h, i) => {
+                    const isCur = h.shiChenIndex === curShiChen
+                    return (
+                      <div key={h.shiChenIndex} className="flex items-center gap-2">
+                        <span
+                          className={`w-3 shrink-0 text-center text-xs ${
+                            isCur ? 'text-zhusha-bright' : 'text-transparent'
+                          }`}
+                          aria-hidden
+                        >
+                          ▶
+                        </span>
+                        <span
+                          className={`w-10 shrink-0 text-xs ${
+                            isCur ? 'font-semibold text-zhusha-bright' : 'text-qingmo'
+                          }`}
+                        >
+                          {h.name}
+                        </span>
+                        <span className="w-20 shrink-0 text-[10px] tabular-nums text-qingmo-mute">
+                          {h.range}
+                        </span>
+                        <div className="flex-1">
+                          <ScoreBar value={h.score} delay={0.04 + i * 0.03} />
+                        </div>
+                        <span className="w-8 shrink-0 text-right text-xs tabular-nums text-mibai">
+                          {h.score}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Card>
       </motion.div>
 
-      {/* 今日内容风向 —— 点行直跳 result 快测 */}
+      {/* 我的赛道 (Card B 位置) */}
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...spring, delay: d(1.2) }}
+      >
+        <MyTracksCard
+          preferred={preferred}
+          preferredLoaded={preferredLoaded}
+          myTracks={myTracks}
+          onOpenPicker={() => setSheetOpen(true)}
+          onClickRow={quickTest}
+        />
+      </motion.div>
+
+      {/* 今日内容风向 (赛道气场榜,platform 无关) */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: d(1.3) }}
       >
-        <Card title="今日内容风向" subtitle="点击直接测算">
+        <Card title="今日内容风向" subtitle="赛道气场榜 · 点击详测">
           <p className="mb-2 text-xs text-qingmo">宜发 · 顺势之选</p>
           <div className="flex flex-col gap-1.5">
             {goodTypes.map((t, i) => (
@@ -237,7 +380,88 @@ export function DashboardPage() {
           进 入 测 算
         </Link>
       </motion.div>
+
+      <TrackPickerSheet
+        open={sheetOpen}
+        initial={preferred}
+        onClose={() => setSheetOpen(false)}
+        onSave={handleSavePreferred}
+      />
     </div>
+  )
+}
+
+function MyTracksCard({
+  preferred,
+  preferredLoaded,
+  myTracks,
+  onOpenPicker,
+  onClickRow,
+}: {
+  preferred: PreferredTracks | null
+  preferredLoaded: boolean
+  myTracks: MyTrackScore[] | null
+  onOpenPicker: () => void
+  onClickRow: (videoTypeId: string) => void
+}) {
+  // 未加载完前不显示卡(避免空态闪一下)
+  if (!preferredLoaded) {
+    return (
+      <Card title="我的赛道" subtitle="按你的主平台算">
+        <div className="py-3 text-center text-xs text-qingmo-mute">载入中…</div>
+      </Card>
+    )
+  }
+
+  if (!preferred || preferred.trackIds.length === 0) {
+    return (
+      <Card title="我的赛道" subtitle="一眼看自己赛道">
+        <div className="flex flex-col items-center gap-3 py-3 text-center">
+          <p className="text-sm text-qingmo">还没选呢</p>
+          <button
+            type="button"
+            onClick={onOpenPicker}
+            className="cursor-pointer rounded-xl border border-zhusha-bright/60 px-5 py-2 text-sm text-zhusha-bright transition hover:bg-zhusha-bright/10 active:scale-[0.98]"
+          >
+            选你的赛道 →
+          </button>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <header className="mb-3 flex items-baseline gap-2">
+        <span className="h-4 w-1 rounded-full bg-shiqing" />
+        <h2 className="text-base font-semibold tracking-wide text-mibai">我的赛道</h2>
+        <span className="text-xs text-qingmo">
+          {preferred.platform} · 综合分
+        </span>
+        <button
+          type="button"
+          onClick={onOpenPicker}
+          className="ml-auto cursor-pointer text-xs text-shiqing transition-colors hover:text-jin-bright"
+        >
+          管理 ›
+        </button>
+      </header>
+      <div className="flex flex-col gap-1.5">
+        {myTracks === null ? (
+          <div className="py-2 text-center text-xs text-qingmo-mute">推演中…</div>
+        ) : (
+          myTracks.map((t) => (
+            <TypeRow
+              key={t.video.id}
+              video={t.video}
+              score={t.score}
+              tone={t.score >= 60 ? 'good' : 'slow'}
+              onClick={() => onClickRow(t.video.id)}
+            />
+          ))
+        )}
+      </div>
+    </Card>
   )
 }
 

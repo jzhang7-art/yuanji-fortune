@@ -15,6 +15,7 @@ type EventName =
   | 'invite_redeem_success'
   | 'contact_wechat_view'
   | 'contact_wechat_copy'
+  | 'preferred_tracks_set'
 
 let posthog: any = null
 

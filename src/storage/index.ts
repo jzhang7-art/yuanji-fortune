@@ -2,9 +2,17 @@
 import type { BaZiInput } from '@/domain/bazi'
 import type { HistoryRecord } from '@/types'
 import { HISTORY_MAX } from '@/data/constants'
+import { VIDEO_TYPES } from '@/data/videoTypes'
+import { PLATFORMS } from '@/data/scoringConfig'
 
 const BAZI_KEY = 'zmf:bazi'
 const HISTORY_KEY = 'zmf:history'
+const TRACKS_KEY = 'zmf:tracks'
+
+export interface PreferredTracks {
+  trackIds: string[] // 长度 1-3，须为 VIDEO_TYPES.id
+  platform: string // 须为 PLATFORMS 之一
+}
 
 function read<T>(key: string): T | null {
   try {
@@ -45,7 +53,37 @@ export async function clearHistory(): Promise<void> {
   write(HISTORY_KEY, [])
 }
 
-const ALL_KEYS = ['zmf:bazi', 'zmf:history', 'zmf:publish', 'zmf:consent']
+export async function loadPreferredTracks(): Promise<PreferredTracks | null> {
+  const raw = read<unknown>(TRACKS_KEY)
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as { trackIds?: unknown; platform?: unknown }
+  if (!Array.isArray(obj.trackIds) || typeof obj.platform !== 'string') return null
+  const validIds = obj.trackIds.filter(
+    (id): id is string => typeof id === 'string' && VIDEO_TYPES.some((v) => v.id === id),
+  )
+  if (validIds.length === 0) return null
+  if (!(PLATFORMS as readonly string[]).includes(obj.platform)) return null
+  return { trackIds: validIds.slice(0, 3), platform: obj.platform }
+}
+
+export async function savePreferredTracks(p: PreferredTracks): Promise<void> {
+  const validIds = p.trackIds.filter((id) => VIDEO_TYPES.some((v) => v.id === id)).slice(0, 3)
+  const validPlatform = (PLATFORMS as readonly string[]).includes(p.platform)
+    ? p.platform
+    : PLATFORMS[0]
+  if (validIds.length === 0) return
+  write(TRACKS_KEY, { trackIds: validIds, platform: validPlatform })
+}
+
+export async function clearPreferredTracks(): Promise<void> {
+  try {
+    localStorage.removeItem(TRACKS_KEY)
+  } catch {
+    /* 忽略 */
+  }
+}
+
+const ALL_KEYS = ['zmf:bazi', 'zmf:history', 'zmf:publish', 'zmf:consent', 'zmf:tracks']
 
 export async function eraseAllUserData(): Promise<void> {
   try {

@@ -74,7 +74,7 @@ export function MePage() {
                     {baziInput.year}&thinsp;年&thinsp;{baziInput.month}&thinsp;月&thinsp;{baziInput.day}&thinsp;日
                   </p>
                   <p className="text-[13px] leading-relaxed text-qingmo">
-                    {baziInput.gender}&ensp;·&ensp;{shichen.name}&ensp;·&ensp;日主&thinsp;{chart.dayMaster}·{chart.dayMasterWuXing}
+                    {baziInput.gender}&ensp;·&ensp;{shichen.name}&thinsp;{shichen.range}&ensp;·&ensp;日主&thinsp;{chart.dayMaster}·{chart.dayMasterWuXing}
                   </p>
                 </div>
 

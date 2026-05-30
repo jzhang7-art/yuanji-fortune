@@ -31,7 +31,7 @@ export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
         <div className="flex flex-col gap-2">
           {target.hours.map((h, i) => (
             <div key={h.shiChenIndex} className="flex items-center gap-2">
-              <span className="w-14 shrink-0">
+              <span className="flex w-24 shrink-0 flex-col">
                 <span className="relative inline-block text-xs text-qingmo">
                   {h.name}
                   {topHourIdx.has(h.shiChenIndex) && (
@@ -43,6 +43,7 @@ export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
                     </span>
                   )}
                 </span>
+                <span className="text-[10px] tabular-nums text-qingmo-mute">{h.range}</span>
               </span>
               <div className="flex-1">
                 <ScoreBar value={h.score} delay={0.05 + i * 0.04} />
@@ -144,7 +145,7 @@ export function ResultPanelsLocked({ chart, forecast }: ResultPanelsProps) {
       <Reveal>
         <Card
           title="奇门遁甲时局"
-          subtitle={`${bestHour.name} · ${bestHour.qimen.chart.dunType}${bestHour.qimen.chart.juShu}局`}
+          subtitle={`${bestHour.name} ${bestHour.range} · ${bestHour.qimen.chart.dunType}${bestHour.qimen.chart.juShu}局`}
         >
           <p className="text-sm leading-relaxed text-mibai">{bestHour.qimen.summary}</p>
           <div className="mt-3 flex flex-col gap-1.5">

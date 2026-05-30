@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2, Bell, Tag, ShieldOff, KeyRound } from 'lucide-react'
-import { clearHistory, eraseAllUserData, loadHistory } from '@/storage'
+import { RefreshCw, Trash2, Bell, Tag, ShieldOff, KeyRound, Compass } from 'lucide-react'
+import {
+  clearHistory,
+  eraseAllUserData,
+  loadHistory,
+  loadPreferredTracks,
+  savePreferredTracks,
+  type PreferredTracks,
+} from '@/storage'
 import { RowLink, RowGroup } from '@/components/RowLink'
 import { RedeemCard } from '@/components/LockedSection'
 import { useInvite } from '@/features/invite'
 import { FortuneScene } from '@/components/decor/FortuneScene'
 import { StaggerList, StaggerItem } from '@/motion/Stagger'
+import { TrackPickerSheet } from '@/components/TrackPickerSheet'
 import { alert, confirm } from '@/platform/dialog'
 
 const ICON_SIZE = 18
@@ -13,11 +21,19 @@ const ICON_STROKE = 1.5
 
 export function SettingsPage() {
   const [count, setCount] = useState<number | null>(null)
+  const [preferred, setPreferred] = useState<PreferredTracks | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const invite = useInvite()
 
   useEffect(() => {
     loadHistory().then((r) => setCount(r.length))
+    loadPreferredTracks().then((p) => setPreferred(p))
   }, [])
+
+  function handleSavePreferred(next: PreferredTracks) {
+    setPreferred(next)
+    void savePreferredTracks(next)
+  }
 
   async function handleClear() {
     if (!confirm('确定清空全部测算记录？此操作不可撤销。')) return
@@ -46,6 +62,21 @@ export function SettingsPage() {
               icon={<RefreshCw size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
               label="重排生辰八字"
               to="/lotus"
+            />
+          </RowGroup>
+        </StaggerItem>
+
+        <StaggerItem>
+          <RowGroup title="首 页 偏 好">
+            <RowLink
+              icon={<Compass size={ICON_SIZE} strokeWidth={ICON_STROKE} />}
+              label="我的赛道"
+              trailing={
+                preferred
+                  ? `${preferred.trackIds.length} 个 · ${preferred.platform}`
+                  : '未设置'
+              }
+              onClick={() => setSheetOpen(true)}
             />
           </RowGroup>
         </StaggerItem>
@@ -113,6 +144,12 @@ export function SettingsPage() {
           </RowGroup>
         </StaggerItem>
       </StaggerList>
+      <TrackPickerSheet
+        open={sheetOpen}
+        initial={preferred}
+        onClose={() => setSheetOpen(false)}
+        onSave={handleSavePreferred}
+      />
     </FortuneScene>
   )
 }

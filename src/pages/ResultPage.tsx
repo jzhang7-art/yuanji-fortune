@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAppState } from '@/state/AppState'
 import { useBaZiChart } from '@/hooks/useBaZiChart'
-import { buildDecision, computeForecast } from '@/domain/scoring'
-import { getVideoType } from '@/data/videoTypes'
+import { buildDecision, computeForecast, type Forecast } from '@/domain/scoring'
+import { getVideoType, type VideoType } from '@/data/videoTypes'
 import { saveHistory } from '@/storage'
 import { ShareCardModal } from '@/components/ShareCardModal'
 import { FortuneScene } from '@/components/decor/FortuneScene'
@@ -12,6 +12,7 @@ import { Reveal } from '@/motion/Reveal'
 import { ResultHero } from '@/components/result/ResultHero'
 import { ResultPanelBestHour, ResultPanelsLocked } from '@/components/result/ResultPanels'
 import { LockedSection } from '@/components/LockedSection'
+import { MysticLoader } from '@/components/loading/MysticLoader'
 
 export function ResultPage() {
   const navigate = useNavigate()
@@ -19,18 +20,50 @@ export function ResultPage() {
   const chart = useBaZiChart()
   const saved = useRef(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [data, setData] = useState<{ forecast: Forecast; video: VideoType } | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const data = useMemo(() => {
-    if (!chart || !publishInfo) return null
+  useEffect(() => {
+    setData(null)
+    if (!chart || !publishInfo) {
+      setLoading(false)
+      return
+    }
     const video = getVideoType(publishInfo.videoTypeId)
-    if (!video) return null
-    const forecast = computeForecast(
-      chart,
-      video,
-      publishInfo.targetDate,
-      publishInfo.platform,
-    )
-    return { forecast, video }
+    if (!video) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    const startedAt = Date.now()
+    let settled = false
+    let computeTimer = 0
+    let finishTimer = 0
+    // RAF + setTimeout 0:RAF 等下一帧,setTimeout 把 compute 推到下个宏任务,
+    // 给浏览器机会先 paint 出 MysticLoader,再开始同步计算
+    const raf = requestAnimationFrame(() => {
+      computeTimer = window.setTimeout(() => {
+        const forecast = computeForecast(
+          chart,
+          video,
+          publishInfo.targetDate,
+          publishInfo.platform,
+        )
+        const elapsed = Date.now() - startedAt
+        const wait = Math.max(0, 600 - elapsed)
+        finishTimer = window.setTimeout(() => {
+          if (settled) return
+          setData({ forecast, video })
+          setLoading(false)
+        }, wait)
+      }, 0)
+    })
+    return () => {
+      settled = true
+      cancelAnimationFrame(raf)
+      if (computeTimer) window.clearTimeout(computeTimer)
+      if (finishTimer) window.clearTimeout(finishTimer)
+    }
   }, [chart, publishInfo])
 
   useEffect(() => {
@@ -44,6 +77,14 @@ export function ResultPage() {
       overallScore: data.forecast.target.overall,
     })
   }, [data, baziInput, publishInfo])
+
+  if (loading) {
+    return (
+      <FortuneScene tone="yunwen">
+        <MysticLoader variant="full" />
+      </FortuneScene>
+    )
+  }
 
   if (!baziInput || !publishInfo || !data || !chart) {
     return (
