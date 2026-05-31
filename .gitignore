@@ -10,3 +10,12 @@ playwright-report/
 !.env.example
 *.log
 .vercel
+
+# 注:.claude/settings.local.json 在本仓库**有意保持 tracked**,
+# 与 Codex / Claude Code 双 Agent 协作时共享权限白名单(decision: 2026-05-31)。
+
+# CodeGraph IDE 索引缓存
+.codegraph/
+
+# 临时虚拟环境（playwright 等本地测试）
+pwvenv/
