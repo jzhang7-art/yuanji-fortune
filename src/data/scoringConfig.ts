@@ -70,13 +70,13 @@ export const FORTUNE_WEIGHTS = {
 } as const
 
 // 区分度拉伸增益：stretched = 50 + (raw - 50) * GAIN
-export const FORTUNE_STRETCH_GAIN = 1.4
+export const FORTUNE_STRETCH_GAIN = 1.5
 
 // 神煞 bonus 求和封顶
 export const SHENSHA_BONUS_CAP = 18
 
 // 流量窗口：>= 活跃阈值 命理全权决定；以下按比例降权到地板
 export const TRAFFIC_ACTIVE_THRESHOLD = 50
-export const TRAFFIC_FACTOR_FLOOR = 0.55
+export const TRAFFIC_FACTOR_FLOOR = 0.68
 // 低于此流量标注「流量低谷」
 export const TRAFFIC_LOW_THRESHOLD = 40
