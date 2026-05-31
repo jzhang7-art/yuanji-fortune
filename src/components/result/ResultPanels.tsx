@@ -1,6 +1,6 @@
 import type { BaZiChart } from '@/domain/bazi'
 import type { Forecast } from '@/domain/scoring'
-import { Card, ElementBadge, Pill, ScoreBar, PeakLabel, QiChangPill } from '@/components/ui'
+import { Card, ElementBadge, Pill, ScoreBar, QiChangPill } from '@/components/ui'
 import { Reveal } from '@/motion/Reveal'
 import { formatDate } from '@/util'
 
@@ -15,8 +15,9 @@ export interface ResultPanelsProps {
  */
 export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
   const { target } = forecast
-  const topHourIdx = new Set(forecast.bestHours.slice(0, 3).map((h) => h.shiChenIndex))
   const bestHour = forecast.bestHours[0]
+  const topIdx = bestHour?.shiChenIndex
+  const candidateIdx = new Set(forecast.bestHours.slice(1, 3).map((h) => h.shiChenIndex))
 
   return (
     <Reveal>
@@ -41,12 +42,20 @@ export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
               <span className="flex w-24 shrink-0 flex-col">
                 <span className="relative inline-block text-xs text-qingmo">
                   {h.name}
-                  {topHourIdx.has(h.shiChenIndex) && (
+                  {h.shiChenIndex === topIdx && (
                     <span
                       className="absolute -right-3 -top-2 rotate-[-12deg] select-none rounded-[3px] border border-zhusha-bright/80 bg-zhusha-bright/15 px-[3px] text-[10px] font-bold leading-[1.5] text-zhusha-bright"
-                      title="推荐时辰"
+                      title="首选时辰"
                     >
                       荐
+                    </span>
+                  )}
+                  {candidateIdx.has(h.shiChenIndex) && (
+                    <span
+                      className="absolute -right-3 -top-2 rotate-[-12deg] select-none rounded-[3px] border border-shiqing/70 bg-shiqing/12 px-[3px] text-[10px] font-bold leading-[1.5] text-shiqing"
+                      title="次宜时辰"
+                    >
+                      宜
                     </span>
                   )}
                 </span>
@@ -59,7 +68,6 @@ export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
                 {h.score}
               </span>
               <span className="flex w-7 shrink-0 justify-center">
-                {h.platformPeak && <PeakLabel />}
                 {h.lowTraffic && (
                   <span
                     aria-label="平台流量低谷"
