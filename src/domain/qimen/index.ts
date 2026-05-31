@@ -261,3 +261,52 @@ export function evaluateQiMen(chart: QiMenChart): QiMenResult {
     })),
   }
 }
+
+export interface DayMasterQiMen {
+  dayMasterPalace: number
+  quality: number // 0–100
+  note: string
+}
+
+/**
+ * 奇门日干用神：取日干地盘落宫为用神宫，评估其质量 + 与三用神门（景/生/开）宫的生克。
+ * 日干=甲遁旬首六仪（按日干支所在旬），其余日干直接在地盘定位。只读 chart.palaces。
+ */
+export function evaluateQiMenForDayMaster(
+  chart: QiMenChart,
+  dayMaster: string,
+): DayMasterQiMen {
+  // 1. 定位日干落宫
+  let targetGan = dayMaster
+  if (dayMaster === '甲') {
+    // 甲遁旬首：按日干支求旬首六仪
+    const dayIdx = jiaZiIndex(chart.dayGanZhi)
+    const xun = dayIdx >= 0 ? Math.floor(dayIdx / 10) : 0
+    targetGan = XUN_SHOU_YI[xun]
+  }
+  let dmPalace = 5
+  for (let p = 1; p <= 9; p++) {
+    if (chart.palaces[p].earthGan === targetGan) {
+      dmPalace = p
+      break
+    }
+  }
+  const ps = chart.palaces[dmPalace]
+  const baseQuality = palaceQuality(ps)
+
+  // 2. 与三用神门宫的生克（日干宫 vs 门宫五行）
+  const dmElement = ps.element
+  let rel = 0
+  for (const door of ['景门', '生门', '开门']) {
+    const dp = findDoorPalace(chart, door)
+    const de = dp.element
+    if (sheng(dmElement, de)) rel += 4 // 宫生门：气贯传播
+    else if (de === dmElement) rel += 2 // 比和
+    else if (ke(de, dmElement)) rel -= 4 // 门克宫：受制
+    else if (ke(dmElement, de)) rel -= 2 // 宫克门：耗气
+  }
+
+  const quality = clamp(Math.round(baseQuality + rel), 0, 100)
+  const note = `日干${dayMaster}落${PALACE_META[dmPalace].trigram}宫（${PALACE_META[dmPalace].direction}），用神门${rel >= 0 ? '得气' : '受制'}`
+  return { dayMasterPalace: dmPalace, quality, note }
+}

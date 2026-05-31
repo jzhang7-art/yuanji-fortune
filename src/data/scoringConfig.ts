@@ -57,3 +57,26 @@ export const PLATFORM_PROFILES: Record<string, PlatformProfile> = {
 export function getPlatformProfile(platform: string): PlatformProfile {
   return PLATFORM_PROFILES[platform] ?? PLATFORM_PROFILES['其他']
 }
+
+// —— 时辰个人化命理引擎配置 ——
+
+// 命理四层 + 日维基线权重（和为 1），用于合成 fortuneScore
+export const FORTUNE_WEIGHTS = {
+  shiShen: 0.38, // 时柱十神（含喜忌调节）
+  shenSha: 0.12, // 神煞落时辰
+  qimenDayMaster: 0.18, // 奇门·候选时辰日干用神
+  qimenPresentAim: 0.12, // 奇门·当下局指向
+  dayBaseline: 0.2, // 日维基线（八字日支 + 黄历 + 视频契合）
+} as const
+
+// 区分度拉伸增益：stretched = 50 + (raw - 50) * GAIN
+export const FORTUNE_STRETCH_GAIN = 1.5
+
+// 神煞 bonus 求和封顶
+export const SHENSHA_BONUS_CAP = 18
+
+// 流量窗口：>= 活跃阈值 命理全权决定；以下按比例降权到地板
+export const TRAFFIC_ACTIVE_THRESHOLD = 50
+export const TRAFFIC_FACTOR_FLOOR = 0.68
+// 低于此流量标注「流量低谷」
+export const TRAFFIC_LOW_THRESHOLD = 40

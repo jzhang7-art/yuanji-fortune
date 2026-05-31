@@ -180,19 +180,24 @@ describe('评分引擎', () => {
     expect(bili.futureDays).toHaveLength(7)
   })
 
-  it('平台流量为次要项：换平台不改当日总分，仅调时辰排序', () => {
+  it('平台流量为窗口约束：换平台不改当日总分，且不污染活跃窗口内命理序', () => {
     const chart = computeBaZi({ year: 1992, month: 3, day: 20, shiChenIndex: 5, gender: '男' })
     const video = getVideoType('knowledge')!
-    const dou = computeForecast(chart, video, '2026-05-18', '抖音')
-    const bili = computeForecast(chart, video, '2026-05-18', 'B站')
-    // 当日总概率与平台无关
+    const now = new Date('2026-05-18T12:30:00')
+    const dou = computeForecast(chart, video, '2026-05-18', '抖音', now)
+    const bili = computeForecast(chart, video, '2026-05-18', 'B站', now)
+    // 当日总分只来自命理，与平台无关
     expect(dou.target.overall).toBe(bili.target.overall)
-    // 抖音晚间高峰时辰（戌/亥）得分 ≥ 凌晨低谷时辰（丑/寅）
     const hour = (f: typeof dou, idx: number) =>
       f.target.hours.find((h) => h.shiChenIndex === idx)!
-    expect(hour(dou, 11).score).toBeGreaterThanOrEqual(hour(dou, 2).score)
+    // 凌晨低流量时辰被降权但不剔除（降权不剔除）
+    const yin = hour(dou, 2)
+    expect(yin.lowTraffic).toBe(true)
+    expect(yin.finalScore).toBeGreaterThan(0)
+    expect(yin.trafficFactor).toBeLessThan(1)
+    // 晚间高峰时辰为活跃窗口，命理全权（factor=1）
     expect(hour(dou, 11).platformPeak).toBe(true)
-    expect(hour(dou, 2).platformPeak).toBe(false)
+    expect(hour(dou, 11).trafficFactor).toBe(1)
   })
 
   it('生成今日决策且与预测一致', () => {

@@ -2,31 +2,21 @@
 import type { BaZiChart } from '@/domain/bazi'
 import type { HuangLiInfo } from '@/domain/huangli'
 import { computeHuangLi } from '@/domain/huangli'
-import type { QiMenResult } from '@/domain/qimen'
-import { computeQiMen, evaluateQiMen } from '@/domain/qimen'
 import { sheng } from '@/domain/wuxing'
 import { VIDEO_TYPES, type VideoType } from '@/data/videoTypes'
 import { GAN_WU_XING, SHI_CHEN, ZHI_WU_XING } from '@/data/ganzhi'
 import type { DiZhi, TianGan } from '@/data/ganzhi'
-import {
-  getPlatformProfile,
-  PLATFORM_HOUR_WEIGHT,
-  PLATFORM_PEAK_THRESHOLD,
-  SCORE_WEIGHTS,
-} from '@/data/scoringConfig'
+import { getPlatformProfile } from '@/data/scoringConfig'
+import { scoreHourFortune, type DayContext } from '@/domain/scoring/hourFortune'
+import { applyTrafficWindow, type RankedHour } from '@/domain/scoring/trafficWindow'
+import { buildPresentDivination, type PresentDivination } from '@/domain/scoring/present'
 import { clamp, fromYmd, toYmd } from '@/util'
+
+export { getQiMen } from '@/domain/scoring/qimenCache'
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
-export interface HourScore {
-  shiChenIndex: number
-  name: string
-  range: string
-  score: number
-  qimenScore: number
-  qimen: QiMenResult
-  platformPeak: boolean // 该时辰是否为所选平台的流量高峰
-}
+export type HourScore = RankedHour
 
 export interface DayScore {
   date: string
@@ -41,16 +31,17 @@ export interface DayDetail {
   baziDayScore: number
   videoScore: number
   huangli: HuangLiInfo
-  hours: HourScore[]
+  hours: RankedHour[]
   qimenAvg: number
   overall: number
 }
 
 export interface Forecast {
   target: DayDetail
-  bestHours: HourScore[] // 按分数降序
+  bestHours: RankedHour[] // 按分数降序
   futureDays: DayScore[] // 按日期顺序
   bestDays: DayScore[] // 按分数降序
+  presentHeadline: string
 }
 
 /** 八字喜用神 vs 当日干支五行 */
@@ -83,33 +74,6 @@ function videoMatchScore(video: VideoType, chart: BaZiChart, dayGanZhi: string):
   return clamp(s, 12, 95)
 }
 
-function combine(bazi: number, huangli: number, qimen: number, video: number): number {
-  return clamp(
-    Math.round(
-      bazi * SCORE_WEIGHTS.bazi +
-        huangli * SCORE_WEIGHTS.huangli +
-        qimen * SCORE_WEIGHTS.qimen +
-        video * SCORE_WEIGHTS.videoMatch,
-    ),
-    0,
-    100,
-  )
-}
-
-// 奇门排盘记忆化：同一时空为纯函数，比测/日历会反复命中相同日期
-const qimenCache = new Map<string, QiMenResult>()
-
-/** 取（缓存的）某时辰奇门评估结果 */
-export function getQiMen(y: number, m: number, d: number, h: number): QiMenResult {
-  const key = `${y}-${m}-${d}-${h}`
-  let r = qimenCache.get(key)
-  if (!r) {
-    r = evaluateQiMen(computeQiMen(y, m, d, h))
-    qimenCache.set(key, r)
-  }
-  return r
-}
-
 /** 计算单日详情（含 12 时辰逐时辰评分） */
 function scoreDay(
   chart: BaZiChart,
@@ -118,37 +82,31 @@ function scoreDay(
   m: number,
   d: number,
   platform: string,
+  present: PresentDivination,
 ): DayDetail {
   const huangli = computeHuangLi(y, m, d)
   const dayGanZhi = huangli.dayGanZhi
   const baziDay = baziDayScore(chart, dayGanZhi)
   const videoScore = videoMatchScore(video, chart, dayGanZhi)
-  const profile = getPlatformProfile(platform)
+  // 日维基线：八字日支 + 黄历 + 视频契合（全天恒定）
+  const dayBaselineScore = clamp(
+    Math.round(baziDay * 0.45 + huangli.score * 0.3 + videoScore * 0.25),
+    0,
+    100,
+  )
+  const ctx: DayContext = { dayGanZhi, dayBaselineScore }
 
-  const hours: HourScore[] = SHI_CHEN.map((sc) => {
-    const qimen = getQiMen(y, m, d, sc.index)
-    // 命理四维为主，平台真实流量为次要辅助
-    const base = combine(baziDay, huangli.score, qimen.score, videoScore)
-    const platformHour = profile.hourScores[sc.index] ?? 50
-    const score = clamp(
-      Math.round(
-        base * (1 - PLATFORM_HOUR_WEIGHT) + platformHour * PLATFORM_HOUR_WEIGHT,
-      ),
-      0,
-      100,
-    )
-    return {
-      shiChenIndex: sc.index,
-      name: sc.name,
-      range: sc.range,
-      score,
-      qimenScore: qimen.score,
-      qimen,
-      platformPeak: platformHour >= PLATFORM_PEAK_THRESHOLD,
-    }
-  })
-  const qimenAvg = hours.reduce((a, h) => a + h.qimenScore, 0) / hours.length
-  const overall = combine(baziDay, huangli.score, qimenAvg, videoScore)
+  const fortunes = SHI_CHEN.map((sc) =>
+    scoreHourFortune(chart, y, m, d, sc.index, ctx, present),
+  )
+  const hours = applyTrafficWindow(fortunes, platform)
+
+  const meanFortune =
+    fortunes.reduce((a, f) => a + f.fortuneScore, 0) / fortunes.length
+  const overall = clamp(Math.round(meanFortune + present.toneShift), 0, 100)
+  const qimenAvg = Math.round(
+    fortunes.reduce((a, f) => a + f.qimenDayMaster.quality, 0) / fortunes.length,
+  )
 
   return {
     date: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
@@ -157,7 +115,7 @@ function scoreDay(
     videoScore,
     huangli,
     hours,
-    qimenAvg: Math.round(qimenAvg),
+    qimenAvg,
     overall,
   }
 }
@@ -168,7 +126,9 @@ export function computeForecast(
   video: VideoType,
   targetDate: string,
   platform: string,
+  now: Date = new Date(),
 ): Forecast {
+  const present = buildPresentDivination(now)
   const d0 = fromYmd(targetDate)
   const target = scoreDay(
     chart,
@@ -177,6 +137,7 @@ export function computeForecast(
     d0.getMonth() + 1,
     d0.getDate(),
     platform,
+    present,
   )
   const bestHours = [...target.hours].sort((a, b) => b.score - a.score)
 
@@ -194,6 +155,7 @@ export function computeForecast(
       dt.getMonth() + 1,
       dt.getDate(),
       platform,
+      present,
     )
     futureDays.push({
       date: toYmd(dt),
@@ -204,7 +166,7 @@ export function computeForecast(
   }
   const bestDays = [...futureDays].sort((a, b) => b.score - a.score)
 
-  return { target, bestHours, futureDays, bestDays }
+  return { target, bestHours, futureDays, bestDays, presentHeadline: present.headline }
 }
 
 /** 概率分档文案 */
@@ -262,8 +224,9 @@ export interface DailyFortune {
   dayGanZhi: string
   dayScore: number
   huangli: HuangLiInfo
-  hours: HourScore[]
+  hours: RankedHour[]
   typeRanking: { video: VideoType; score: number }[] // 按当日 videoMatchScore 降序
+  presentHeadline: string
 }
 
 /** 当日创作运势（与具体视频无关）：供首页 Dashboard */
@@ -271,7 +234,9 @@ export function computeDailyFortune(
   chart: BaZiChart,
   date: string,
   platform = '其他',
+  now: Date = new Date(),
 ): DailyFortune {
+  const present = buildPresentDivination(now)
   const d0 = fromYmd(date)
   const detail = scoreDay(
     chart,
@@ -280,6 +245,7 @@ export function computeDailyFortune(
     d0.getMonth() + 1,
     d0.getDate(),
     platform,
+    present,
   )
   const typeRanking = VIDEO_TYPES.map((video) => ({
     video,
@@ -293,6 +259,7 @@ export function computeDailyFortune(
     huangli: detail.huangli,
     hours: detail.hours,
     typeRanking,
+    presentHeadline: present.headline,
   }
 }
 
@@ -301,7 +268,9 @@ export function computeCalendar(
   chart: BaZiChart,
   fromDate: string,
   days: number,
+  now: Date = new Date(),
 ): DayScore[] {
+  const present = buildPresentDivination(now)
   const d0 = fromYmd(fromDate)
   const out: DayScore[] = []
   for (let i = 0; i < days; i++) {
@@ -314,6 +283,7 @@ export function computeCalendar(
       dt.getMonth() + 1,
       dt.getDate(),
       '其他',
+      present,
     )
     out.push({
       date: toYmd(dt),
@@ -345,7 +315,9 @@ export function computeSchedule(
   fromDate: string,
   windowDays: number,
   count: number,
+  now: Date = new Date(),
 ): { picked: ScheduleSlot[]; all: ScheduleSlot[] } {
+  const present = buildPresentDivination(now)
   const d0 = fromYmd(fromDate)
   const all: ScheduleSlot[] = []
   for (let i = 0; i < windowDays; i++) {
@@ -358,6 +330,7 @@ export function computeSchedule(
       dt.getMonth() + 1,
       dt.getDate(),
       platform,
+      present,
     )
     const bestHour = [...detail.hours].sort((a, b) => b.score - a.score)[0]
     all.push({
