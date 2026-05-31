@@ -28,6 +28,13 @@ export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
           </div>
           <span className="text-xs text-qingmo">综合发布指数 {bestHour.score}</span>
         </div>
+        {bestHour.reasons.length > 0 && (
+          <ul className="mb-3 rounded-xl border border-shiqing/12 bg-ru-deep/60 px-3 py-2 text-xs leading-relaxed text-qingmo">
+            {bestHour.reasons.map((r, i) => (
+              <li key={i}>· {r}</li>
+            ))}
+          </ul>
+        )}
         <div className="flex flex-col gap-2">
           {target.hours.map((h, i) => (
             <div key={h.shiChenIndex} className="flex items-center gap-2">
@@ -53,6 +60,15 @@ export function ResultPanelBestHour({ forecast }: { forecast: Forecast }) {
               </span>
               <span className="flex w-7 shrink-0 justify-center">
                 {h.platformPeak && <PeakLabel />}
+                {h.lowTraffic && (
+                  <span
+                    aria-label="平台流量低谷"
+                    title="平台流量低谷"
+                    className="rounded border border-qingmo-mute/40 bg-white/5 px-1 text-[10px] font-semibold leading-[1.6] text-qingmo-mute"
+                  >
+                    低
+                  </span>
+                )}
               </span>
             </div>
           ))}
