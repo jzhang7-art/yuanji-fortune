@@ -9,7 +9,9 @@ describe('index.html meta hardening', () => {
     expect(html).toMatch(/viewport-fit=cover/)
   })
   it('links manifest', () => {
-    expect(html).toMatch(/rel="manifest"\s+href="\/manifest\.webmanifest"/)
+    // index.html 用 %BASE_URL% 模板变量,vite build 时替换为 base 前缀
+    // 避免在 /yuanji-fortune/ 子路径部署下绝对路径 / 走根而 404
+    expect(html).toMatch(/rel="manifest"\s+href="%BASE_URL%manifest\.webmanifest"/)
   })
   it('has apple-touch-icon', () => {
     expect(html).toMatch(/rel="apple-touch-icon"/)
