@@ -1,7 +1,7 @@
 // 第①段：纯命理时辰分（时柱十神 + 神煞 + 奇门日干用神 + 当下局指向 + 日维基线）
 // 与平台流量、与"谁在看"无关。
 import type { BaZiChart } from '@/domain/bazi'
-import { getQiMen } from '@/domain/scoring'
+import { getQiMen } from '@/domain/scoring/qimenCache'
 import { evaluateQiMenForDayMaster } from '@/domain/qimen'
 import type { QiMenResult } from '@/domain/qimen'
 import { shiShenOf } from '@/domain/shishen'
