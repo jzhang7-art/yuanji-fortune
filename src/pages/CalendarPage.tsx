@@ -210,10 +210,10 @@ export function CalendarPage() {
                         </span>
                         <span
                           className={`text-[11px] font-semibold tabular-nums ${
-                            cellLocked ? 'text-jin/40' : t.text
+                            cellLocked ? 'text-qingmo-mute' : t.text
                           }`}
                         >
-                          {cellLocked ? '✦' : d.score}
+                          {cellLocked ? '🔒' : d.score}
                         </span>
                       </motion.button>
                     )
