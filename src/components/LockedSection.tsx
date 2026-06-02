@@ -16,6 +16,8 @@ export interface LockedSectionProps {
   feature: string
   title?: string
   subtitle?: string
+  /** 锁定时在兑换卡上方渲染一段模糊的内容偷看（诱饵），默认关闭 */
+  preview?: boolean
   children: ReactNode
 }
 
@@ -23,6 +25,7 @@ export function LockedSection({
   feature,
   title = '解锁完整内容',
   subtitle,
+  preview = false,
   children,
 }: LockedSectionProps) {
   const { unlocked } = useInvite()
@@ -36,6 +39,23 @@ export function LockedSection({
   }, [unlocked, feature])
 
   if (unlocked) return <>{children}</>
+
+  if (preview) {
+    return (
+      <div className="relative">
+        <div
+          className="pointer-events-none relative max-h-72 select-none overflow-hidden"
+          aria-hidden
+        >
+          <div className="blur-xl opacity-50">{children}</div>
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ru" />
+        </div>
+        <div className="relative -mt-10">
+          <RedeemCard feature={feature} title={title} subtitle={subtitle} />
+        </div>
+      </div>
+    )
+  }
 
   return <RedeemCard feature={feature} title={title} subtitle={subtitle} />
 }

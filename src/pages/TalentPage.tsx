@@ -90,32 +90,41 @@ export function TalentPage() {
                     >
                       {i + 1}
                     </motion.span>
-                    <span className="text-xl" aria-hidden>
-                      {itemLocked ? '🔒' : r.video.icon}
+                    <span
+                      className={`text-xl ${itemLocked ? 'blur-lg select-none' : ''}`}
+                      aria-hidden
+                    >
+                      {r.video.icon}
                     </span>
-                    <span className="text-base font-semibold text-mibai">
-                      {itemLocked ? '???' : r.video.name}
+                    <span
+                      className={`text-base font-semibold text-mibai ${
+                        itemLocked ? 'blur-lg select-none' : ''
+                      }`}
+                    >
+                      {r.video.name}
                     </span>
-                    {!itemLocked && (
-                      <span className="flex gap-0.5">
-                        {r.video.elements.map((e) => (
-                          <ElementBadge key={e} element={e} size="sm" />
-                        ))}
-                      </span>
-                    )}
-                    <span className="ml-auto text-lg font-bold tabular-nums text-jin-bright">
-                      {itemLocked ? '??' : <RevealNumber value={r.score} />}
+                    <span
+                      className={`flex gap-0.5 ${itemLocked ? 'blur-lg select-none' : ''}`}
+                    >
+                      {r.video.elements.map((e) => (
+                        <ElementBadge key={e} element={e} size="sm" />
+                      ))}
+                    </span>
+                    <span
+                      className={`ml-auto text-lg font-bold tabular-nums text-jin-bright ${
+                        itemLocked ? 'blur-lg select-none' : ''
+                      }`}
+                    >
+                      {itemLocked ? r.score : <RevealNumber value={r.score} />}
                     </span>
                   </div>
+                  <ScoreBar value={r.score} delay={0.4 + i * 0.12} />
                   {itemLocked ? (
                     <p className="text-xs leading-relaxed text-zhusha-bright/80">
-                      第 {i + 1} 名 · 兑换邀请码查看真身与分数
+                      🔒 第 {i + 1} 名 · 解锁揭晓真身与分数
                     </p>
                   ) : (
-                    <>
-                      <ScoreBar value={r.score} delay={0.4 + i * 0.12} />
-                      <p className="text-xs leading-relaxed text-qingmo">{r.reason}</p>
-                    </>
+                    <p className="text-xs leading-relaxed text-qingmo">{r.reason}</p>
                   )}
                 </StaggerItem>
               )

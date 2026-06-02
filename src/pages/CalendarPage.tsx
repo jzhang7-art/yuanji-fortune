@@ -70,6 +70,17 @@ export function CalendarPage() {
     return computeDailyFortune(chart, selected)
   }, [chart, selected])
 
+  // 被封印的吉日数量（本月、锁定区间内、score≥65）。只示数量、不泄露具体日期。
+  const sealedJiCount = useMemo(() => {
+    if (!grid || unlocked) return 0
+    return grid.filter(
+      (d) =>
+        fromYmd(d.date).getMonth() === month.getMonth() &&
+        d.score >= 65 &&
+        (d.date < weekStart || d.date > weekEnd),
+    ).length
+  }, [grid, unlocked, month, weekStart, weekEnd])
+
   if (!ready) return <p className="py-20 text-center text-qingmo">载入中…</p>
   if (!baziInput) return <NeedBaZi />
 
@@ -171,7 +182,6 @@ export function CalendarPage() {
                         }}
                         disabled={cellLocked}
                         aria-disabled={cellLocked}
-                        whileTap={cellLocked ? undefined : { scale: 0.93 }}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{
@@ -180,7 +190,7 @@ export function CalendarPage() {
                         }}
                         className={`relative flex h-13 flex-col items-center justify-center rounded-lg transition-colors ${
                           cellLocked
-                            ? 'cursor-not-allowed bg-white/3'
+                            ? 'cursor-not-allowed bg-jin/5'
                             : `cursor-pointer ${t.bg}`
                         } ${inMonth ? '' : 'opacity-30'} ${
                           !cellLocked && isPast ? 'opacity-45' : ''
@@ -200,10 +210,10 @@ export function CalendarPage() {
                         </span>
                         <span
                           className={`text-[11px] font-semibold tabular-nums ${
-                            cellLocked ? 'text-qingmo-mute' : t.text
+                            cellLocked ? 'text-jin/40' : t.text
                           }`}
                         >
-                          {cellLocked ? '🔒' : d.score}
+                          {cellLocked ? '✦' : d.score}
                         </span>
                       </motion.button>
                     )
@@ -223,7 +233,11 @@ export function CalendarPage() {
         <LockedSection
           feature="calendar"
           title="解锁全月吉日热力图"
-          subtitle="本周外的吉日分数已锁。兑换邀请码后可查看任意月份的完整发布日热力图。"
+          subtitle={
+            sealedJiCount > 0
+              ? `本月另有 ${sealedJiCount} 个黄道吉日被封印——只示其数、不泄其日。兑换邀请码即揭全月热力图。`
+              : '本周外的吉日分数已锁。兑换邀请码后可查看任意月份的完整发布日热力图。'
+          }
         >
           {null}
         </LockedSection>

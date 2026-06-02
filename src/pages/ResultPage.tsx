@@ -120,6 +120,7 @@ export function ResultPage() {
           feature="result_panels"
           title="解锁完整 7 张面板"
           subtitle="八字简析、运势构成四维、当日黄历宜忌、奇门时局、未来吉日—— 兑换邀请码后一并展开。"
+          preview
         >
           <ResultPanelsLocked chart={chart} forecast={forecast} />
         </LockedSection>
