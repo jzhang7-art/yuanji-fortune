@@ -80,14 +80,24 @@ export function RedeemCard({
     >
       <Card accent="zhusha" className="relative overflow-hidden">
         <div className="flex items-center gap-2 text-zhusha-bright">
-          <Lock size={16} strokeWidth={1.6} />
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zhusha/15 text-zhusha-bright shadow-[0_0_10px_rgba(178,58,46,0.35)]">
+            <Lock size={14} strokeWidth={1.8} />
+          </span>
           <span className="text-sm font-semibold">{title}</span>
+        </div>
+        <div className="mt-2">
+          <span className="inline-flex items-center gap-1 rounded-full border border-zhusha/40 px-2.5 py-1 text-[11px] font-medium text-zhusha-bright/90">
+            每周仅放 <span className="num">7</span> 枚 · 限量入局
+          </span>
         </div>
         {subtitle && (
           <p className="mt-2 text-sm leading-relaxed text-qingmo">{subtitle}</p>
         )}
-        <p className="mt-3 text-xs leading-relaxed text-qingmo-mute">
-          在抖音评论区找我留言「<span className="text-mibai">邀请码</span>」，私信发码，输入即解锁。
+        <p className="mt-3 text-xs leading-relaxed text-qingmo">
+          天机不可尽泄，持令牌者方见全盘。
+        </p>
+        <p className="mt-1.5 text-xs leading-relaxed text-qingmo-mute">
+          抖音搜「<span className="text-mibai">明和符</span>」→ 点赞 + 关注 + 评论，每周评论区随机抽 <span className="num text-mibai">7</span> 位赠码。
         </p>
 
         <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
