@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Stepper } from '@/components/Stepper'
 import { BottomNav } from '@/components/BottomNav'
 import { RemoteMountains } from '@/components/decor/RemoteMountains'
+import { IcpFilingLink } from '@/components/IcpFilingLink'
 import { scrollToTop } from '@/platform/scroll'
 
 function ScrollToTop() {
@@ -54,14 +55,7 @@ export function Disclaimer() {
       <p className="mt-2 text-[10px] text-qingmo-mute/70">
         © 2026 玄机 · 发布择时
         <br />
-        <a
-          className="underline decoration-qingmo-mute/40 underline-offset-2"
-          href="https://beian.miit.gov.cn/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          鲁ICP备2026031341号
-        </a>
+        <IcpFilingLink className="underline decoration-qingmo-mute/40 underline-offset-2" />
       </p>
     </footer>
   )

@@ -9,6 +9,7 @@ import { easeOut } from '@/motion/transitions'
 import Magnet from '@/lib/react-bits/Magnet'
 import ClickSpark from '@/lib/react-bits/ClickSpark'
 import { tickFeedback } from '@/util/feedback'
+import { IcpFilingLink } from '@/components/IcpFilingLink'
 
 /**
  * 莲启 · 入局 —— 首启引导（无八字时全屏呈现）
@@ -218,6 +219,11 @@ export function LotusOnboarding({ mode = 'onboarding' }: { mode?: 'onboarding' |
           </ClickSpark>
         </Magnet>
       </motion.div>
+      {!isEdit && (
+        <p className="mt-auto pt-6 text-center text-[10px] text-qingmo-mute/70">
+          <IcpFilingLink className="underline decoration-qingmo-mute/40 underline-offset-2" />
+        </p>
+      )}
     </div>
   )
 }
