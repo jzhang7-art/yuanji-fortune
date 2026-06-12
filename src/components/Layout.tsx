@@ -51,7 +51,18 @@ export function Disclaimer() {
       <p className="mt-2">
         内容能否传播取决于选题、质量与平台机制，本应用不对实际发布效果作任何承诺。
       </p>
-      <p className="mt-2 text-[10px] text-qingmo-mute/70">© 2026 玄机 · 发布择时</p>
+      <p className="mt-2 text-[10px] text-qingmo-mute/70">
+        © 2026 玄机 · 发布择时
+        <br />
+        <a
+          className="underline decoration-qingmo-mute/40 underline-offset-2"
+          href="https://beian.miit.gov.cn/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          鲁ICP备2026031341号
+        </a>
+      </p>
     </footer>
   )
 }
