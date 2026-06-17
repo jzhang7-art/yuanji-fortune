@@ -77,18 +77,24 @@ export function RedeemCard({
   const [code, setCode] = useState('')
   const [err, setErr] = useState<string | null>(null)
   const [ok, setOk] = useState(false)
+  const [pending, setPending] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!code.trim()) return
+    if (!code.trim() || pending) return
     track('invite_redeem_attempt', { feature })
-    const success = redeem(code)
-    if (success) {
-      track('invite_redeem_success', { feature })
-      setOk(true)
-      setErr(null)
-    } else {
-      setErr('邀请码无效，请检查是否输错')
+    setPending(true)
+    try {
+      const success = await redeem(code)
+      if (success) {
+        track('invite_redeem_success', { feature })
+        setOk(true)
+        setErr(null)
+      } else {
+        setErr('邀请码无效，请检查是否输错')
+      }
+    } finally {
+      setPending(false)
     }
   }
 
@@ -128,17 +134,17 @@ export function RedeemCard({
               setCode(e.target.value)
               setErr(null)
             }}
-            placeholder="LOTUS-XXXX"
+            placeholder="LOTUS-XXXX-XXXXXXXX"
             aria-label="邀请码"
             disabled={ok}
             className="flex-1 rounded-xl border border-shiqing/25 bg-ru-deep px-3 py-2.5 text-sm tracking-wider text-mibai placeholder:text-qingmo-mute focus:border-zhusha/60 focus:outline-none disabled:opacity-60"
           />
           <button
             type="submit"
-            disabled={ok || !code.trim()}
+            disabled={ok || pending || !code.trim()}
             className="cursor-pointer rounded-xl bg-gradient-to-b from-zhusha-bright to-zhusha px-4 py-2.5 text-sm font-semibold text-mibai shadow-md shadow-zhusha/20 transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {ok ? '已解锁' : '解锁'}
+            {ok ? '已解锁' : pending ? '校验中…' : '解锁'}
           </button>
         </form>
 
