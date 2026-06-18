@@ -109,6 +109,23 @@ PY
   log "  ✓ nginx 已 reload"
 fi
 
+# === 6.5. 编译并部署前端到 nginx web root ===
+log "6.5/7 编译前端 dist/ 并同步到 nginx web root"
+
+# 从 nginx 配置里提取 root 指令
+WEB_ROOT=$(sudo grep -E "^\s*root\s" "$SITE_CONF" | head -1 | sed -E 's/^\s*root\s+([^;]+);.*/\1/' | xargs)
+[ -n "$WEB_ROOT" ] || err "$SITE_CONF 里找不到 root 指令，无法自动定位前端目录"
+log "  → web root: $WEB_ROOT"
+
+cd "$INSTALL_DIR"
+log "  → npm install --legacy-peer-deps (耗时 1-3 分钟)"
+npm install --cache /tmp/npm-cache-fortune --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3 || err "npm install 失败"
+log "  → npm run build"
+npm run build 2>&1 | tail -3 || err "vite build 失败（可能 VPS 内存不足；尝试 swap 或本机构建后上传）"
+
+log "  → rsync dist/ → $WEB_ROOT"
+sudo rsync -avz --delete "$INSTALL_DIR/dist/" "$WEB_ROOT/" 2>&1 | tail -3
+
 # === 7. 域名层验证 ===
 log "7/7 通过 xuanjitime.com 验证"
 RESP=$(curl -sS --max-time 5 -X POST "https://xuanjitime.com/api/redeem" \
