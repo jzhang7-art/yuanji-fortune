@@ -120,8 +120,8 @@ log "  → web root: $WEB_ROOT"
 cd "$INSTALL_DIR"
 log "  → npm install --legacy-peer-deps (耗时 1-3 分钟)"
 npm install --cache /tmp/npm-cache-fortune --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3 || err "npm install 失败"
-log "  → npm run build"
-npm run build 2>&1 | tail -3 || err "vite build 失败（可能 VPS 内存不足；尝试 swap 或本机构建后上传）"
+log "  → VITE_BASE=/ npm run build"
+VITE_BASE=/ npm run build 2>&1 | tail -3 || err "vite build 失败（可能 VPS 内存不足；尝试 swap 或本机构建后上传）"
 
 log "  → rsync dist/ → $WEB_ROOT"
 sudo rsync -avz --delete "$INSTALL_DIR/dist/" "$WEB_ROOT/" 2>&1 | tail -3
